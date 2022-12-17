@@ -26,7 +26,7 @@ const memoizedValves = {};
 // const memoizedValves = JSON.parse(
 //   (await fs.readFile("memoizedValves.json")).toString()
 // );
-const { valves: RAW_VALVES, nonNullValveIds } = await parseInput(false);
+const { valves: RAW_VALVES, nonNullValveIds } = await parseInput(true);
 // console.log(VALVES);
 
 const VALVES = Object.fromEntries(
@@ -82,9 +82,7 @@ const getMemoizedKey = (
   minutesRemaining1,
   minutesRemaining2
 ) => {
-  return `${id1 < id2 ? id1 : id2}|${
-    id1 < id2 ? id2 : id1
-  }|${openedValveIds.sort((id1, id2) =>
+  return `${id1}|${id2}|${openedValveIds.sort((id1, id2) =>
     id1 < id2 ? 1 : -1
   )}|${minutesRemaining1}|${minutesRemaining2}`;
 };
@@ -221,7 +219,7 @@ const getMaxPressureReleased = (
   return Math.max(...possibilities);
 };
 
-const MINUTES_AVAILABLE = 15;
+const MINUTES_AVAILABLE = 26;
 const START_VALVE_ID = "AA";
 const result = getMaxPressureReleased(
   START_VALVE_ID,
