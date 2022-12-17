@@ -1,5 +1,4 @@
 import * as fs from "fs/promises";
-const Graph = require("node-dijkstra");
 
 const parseInput = async (test = false) => {
   const fileContent = (
@@ -7,6 +6,7 @@ const parseInput = async (test = false) => {
   ).toString();
   const lines = fileContent.split("\n");
   const nonNullValveIds = [];
+  const flowRates = [];
   const valves = lines.reduce((accumulator, line) => {
     const valveId = line.substring(6, 8);
     const flowRate = parseInt(line.split(";")[0].split("=")[1]);
@@ -17,16 +17,21 @@ const parseInput = async (test = false) => {
       .split(", ");
     if (flowRate !== 0) {
       nonNullValveIds.push(valveId);
+      flowRates.push({ flowRate, valveId });
     }
     return {
       ...accumulator,
       [valveId]: {
         flowRate,
-        adjacentValves: adjacentValves.sort(() => Math.random() - 0.5),
+        adjacentValves: adjacentValves, //sort(() => Math.random() - 0.5),
       },
     };
   }, {});
-  return { valves, nonNullValveIds };
+  return {
+    valves,
+    nonNullValveIds,
+    flowRates: flowRates.sort((a, b) => b.flowRate - a.flowRate),
+  };
 };
 
 const simplifyGraph = (rawValves) => {
@@ -169,10 +174,27 @@ const getMemoizedKey = ({
   )}|${minutesLeft1}|${minutesLeft2}`;
 };
 
+const cantReachMaxScore = (
+  infLimit,
+  minutesThreshold,
+  { minutesLeft1, minutesLeft2, openedValves },
+  flowRates
+) => {
+  const closedFlowRates = flowRates.filter(
+    ({ valveId }) => !openedValves[valveId]
+  );
+  const maxMinutesLeft = Math.max(minutesLeft1, minutesLeft2);
+};
+
 console.time("Execution time");
-const { valves: rawValves, nonNullValveIds } = await parseInput(false);
+const {
+  valves: rawValves,
+  nonNullValveIds,
+  flowRates,
+} = await parseInput(false);
 const valves = simplifyGraph(rawValves);
-const MINUTES_AVAILABLE = 26;
+// console.dir(valves, { depth: null });
+const MINUTES_AVAILABLE = 15;
 const START_STATE = {
   valveId1: "AA",
   valveId2: "AA",
@@ -182,26 +204,115 @@ const START_STATE = {
   score: 0,
 };
 let MEMOIZED_STATES = {};
-const states = [START_STATE];
+let states = [START_STATE];
 let bestScore = 0;
 let iterations = 0;
+const INF_LIMIT = 785;
 while (states.length > 0) {
   iterations += 1;
   if (iterations % 1000000 === 0) {
     console.log(
-      `${iterations}: ${states.length} in list, best score is ${bestScore}`
+      `${iterations / 1000000}: ${
+        states.length
+      } in list, best score is ${bestScore}`
     );
   }
 
-  if (iterations % 50000000 === 0) {
+  if (iterations % 5000000 === 0) {
+    console.log("before filter ", states.length);
+    states = states.filter((state) => !MEMOIZED_STATES[getMemoizedKey(state)]);
+    console.log("after filter : ", states.length);
+  }
+
+  if (iterations % 55000000 === 0) {
     console.log("Clearing cache");
     MEMOIZED_STATES = {};
   }
 
   const state = states.pop();
 
+  // if (
+  //   maxMinutesLeft <= 13 &&
+  //   state.score +
+  //     12 *
+  //       (closedFlowRates[0]?.flowRate ??
+  //         0 + closedFlowRates[1]?.flowRate ??
+  //         0) +
+  //     9 *
+  //       (closedFlowRates[2]?.flowRate ??
+  //         0 + closedFlowRates[3]?.flowRate ??
+  //         0) +
+  //     6 *
+  //       (closedFlowRates[4]?.flowRate ??
+  //         0 + closedFlowRates[5]?.flowRate ??
+  //         0) +
+  //     3 *
+  //       (closedFlowRates[6]?.flowRate ??
+  //         0 + closedFlowRates[7]?.flowRate ??
+  //         0) <
+  //     INF_LIMIT
+  // ) {
+  //   continue;
+  // }
+
+  // if (
+  //   maxMinutesLeft <= 10 &&
+  //   state.score +
+  //     9 *
+  //       (closedFlowRates[0]?.flowRate ??
+  //         0 + closedFlowRates[1]?.flowRate ??
+  //         0) +
+  //     6 *
+  //       (closedFlowRates[2]?.flowRate ??
+  //         0 + closedFlowRates[3]?.flowRate ??
+  //         0) +
+  //     3 *
+  //       (closedFlowRates[4]?.flowRate ??
+  //         0 + closedFlowRates[5]?.flowRate ??
+  //         0) <
+  //     INF_LIMIT
+  // ) {
+  //   continue;
+  // }
+
+  // if (
+  //   maxMinutesLeft <= 7 &&
+  //   state.score +
+  //     6 *
+  //       (closedFlowRates[0]?.flowRate ??
+  //         0 + closedFlowRates[1]?.flowRate ??
+  //         0) +
+  //     4 *
+  //       (closedFlowRates[2]?.flowRate ??
+  //         0 + closedFlowRates[3]?.flowRate ??
+  //         0) +
+  //     2 *
+  //       (closedFlowRates[4]?.flowRate ??
+  //         0 + closedFlowRates[5]?.flowRate ??
+  //         0) <
+  //     INF_LIMIT
+  // ) {
+  //   continue;
+  // }
+
   if (
-    (state.minutesLeft1 <= 0 && state.minutesLeft2 <= 0) ||
+    maxMinutesLeft <= 5 &&
+    state.score +
+      4 *
+        (closedFlowRates[0]?.flowRate ??
+          0 + closedFlowRates[1]?.flowRate ??
+          0) +
+      1 *
+        (closedFlowRates[2]?.flowRate ??
+          0 + closedFlowRates[3]?.flowRate ??
+          0) <
+      INF_LIMIT
+  ) {
+    continue;
+  }
+
+  if (
+    (state.minutesLeft1 <= 1 && state.minutesLeft2 <= 1) ||
     areAllValvesOpened(state.openedValves, nonNullValveIds)
   ) {
     if (state.score > bestScore) {
@@ -221,4 +332,8 @@ console.log("Best score : ", bestScore);
 console.timeEnd("Execution time");
 
 // Result is more than 2081
+// Best score found yet is 2411 but it's false
 // and less that 3000
+
+// For 15 minutes result is 785
+// For 20 minutes result is 1443 (not confirmed, reached in around 1.6 seconds on my best shot)
