@@ -27,7 +27,6 @@ const memoizedValves = {};
 //   (await fs.readFile("memoizedValves.json")).toString()
 // );
 const { valves: RAW_VALVES, nonNullValveIds } = await parseInput(false);
-const MINUTES_AVAILABLE = 26;
 // console.log(VALVES);
 
 const VALVES = Object.fromEntries(
@@ -76,184 +75,162 @@ const VALVES = Object.fromEntries(
 
 // console.log("File read, start computing...");
 
-// const getMemoizedKey = (id1, id2, openedValveIds, minutesRemaining) => {
-//   return `${id1 < id2 ? id1 : id2}|${
-//     id1 < id2 ? id2 : id1
-//   }|${openedValveIds.sort((id1, id2) =>
-//     id1 < id2 ? 1 : -1
-//   )}|${minutesRemaining}`;
-// };
+const getMemoizedKey = (
+  id1,
+  id2,
+  openedValveIds,
+  minutesRemaining1,
+  minutesRemaining2
+) => {
+  return `${id1 < id2 ? id1 : id2}|${
+    id1 < id2 ? id2 : id1
+  }|${openedValveIds.sort((id1, id2) =>
+    id1 < id2 ? 1 : -1
+  )}|${minutesRemaining1}|${minutesRemaining2}`;
+};
 
-// const getMaxPressureReleased = (
-//   valveId1,
-//   valveId2,
-//   openedValves,
-//   minutesRemaining
-// ) => {
-//   if (minutesRemaining === 0) {
-//     return 0;
-//   }
-//   const areAllValvesOpened = nonNullValveIds.reduce(
-//     (accumulator, currentValveId) =>
-//       accumulator && openedValves[currentValveId],
-//     true
-//   );
-//   if (areAllValvesOpened) {
-//     console.log(
-//       `All valves are open, stopping with ${minutesRemaining} minutes remaining`
-//     );
-//     return 0;
-//   }
-//   const isMainCall = minutesRemaining > MINUTES_AVAILABLE - 15;
-//   const { adjacentValves: adjacentValves1, flowRate: flowRate1 } =
-//     VALVES[valveId1];
-//   const { adjacentValves: adjacentValves2, flowRate: flowRate2 } =
-//     VALVES[valveId2];
-//   const possibilities = [];
-//   const consideredPossibilities = {};
+const getMaxPressureReleased = (
+  valveId1,
+  valveId2,
+  openedValves,
+  minutesRemaining1,
+  minutesRemaining2
+) => {
+  // console.log({ valveId1, valveId2, minutesRemaining1, minutesRemaining2 });
+  if (minutesRemaining1 <= 0 && minutesRemaining2 <= 0) {
+    return 0;
+  }
 
-//   for (const adjacentValveId1 of adjacentValves1) {
-//     for (const adjacentValveId2 of adjacentValves2) {
-//       if (consideredPossibilities[`${adjacentValveId1}|${adjacentValveId2}`]) {
-//         continue;
-//       }
-//       if (
-//         openedValves["GI"] &&
-//         (adjacentValveId1 === "GI" || adjacentValveId2 === "GI")
-//       ) {
-//         continue;
-//       }
-//       consideredPossibilities[`${adjacentValveId1}|${adjacentValveId2}`] = true;
-//       const memoizedKey = getMemoizedKey(
-//         adjacentValveId1,
-//         adjacentValveId2,
-//         Object.keys(openedValves),
-//         minutesRemaining - 1
-//       );
-//       if (memoizedValves[memoizedKey] === undefined) {
-//         memoizedValves[memoizedKey] = getMaxPressureReleased(
-//           adjacentValveId1,
-//           adjacentValveId2,
-//           openedValves,
-//           minutesRemaining - 1
-//         );
-//       }
-//       if (isMainCall) {
-//         console.log(
-//           minutesRemaining,
-//           "Done with ",
-//           adjacentValveId1,
-//           adjacentValveId2
-//         );
-//       }
-//       possibilities.push(memoizedValves[memoizedKey]);
-//     }
+  const areAllValvesOpened = nonNullValveIds.reduce(
+    (accumulator, currentValveId) =>
+      accumulator && openedValves[currentValveId],
+    true
+  );
+  if (areAllValvesOpened) {
+    // console.log(
+    //   `All valves are open, stopping with ${minutesRemaining1}|${minutesRemaining2} minutes remaining`
+    // );
+    return 0;
+  }
+  const { adjacentValves: adjacentValves1, flowRate: flowRate1 } =
+    VALVES[valveId1];
+  const { adjacentValves: adjacentValves2, flowRate: flowRate2 } =
+    VALVES[valveId2];
+  const possibilities = [];
 
-//     if (!openedValves[valveId2] && flowRate2 !== 0) {
-//       const newOpenValves = {
-//         ...openedValves,
-//         [valveId2]: true,
-//       };
-//       const memoizedKey = getMemoizedKey(
-//         adjacentValveId1,
-//         valveId2,
-//         Object.keys(newOpenValves),
-//         minutesRemaining - 1
-//       );
-//       if (memoizedValves[memoizedKey] === undefined) {
-//         memoizedValves[memoizedKey] = getMaxPressureReleased(
-//           adjacentValveId1,
-//           valveId2,
-//           newOpenValves,
-//           minutesRemaining - 1
-//         );
-//       }
-//       if (isMainCall) {
-//         console.log(minutesRemaining, "Done with ", adjacentValveId1, valveId2);
-//       }
-//       possibilities.push(
-//         minutesRemaining * flowRate2 + memoizedValves[memoizedKey]
-//       );
-//     }
-//   }
+  if (minutesRemaining1 > 0) {
+    for (const { id, distance } of adjacentValves1) {
+      const memoizedKey = getMemoizedKey(
+        id,
+        valveId2,
+        Object.keys(openedValves),
+        minutesRemaining1 - distance,
+        minutesRemaining2
+      );
+      if (memoizedValves[memoizedKey] === undefined) {
+        memoizedValves[memoizedKey] = getMaxPressureReleased(
+          id,
+          valveId2,
+          openedValves,
+          minutesRemaining1 - distance,
+          minutesRemaining2
+        );
+      }
+      possibilities.push(memoizedValves[memoizedKey]);
+    }
 
-//   if (!openedValves[valveId1] && flowRate1 !== 0) {
-//     for (const adjacentValveId2 of adjacentValves2) {
-//       const newOpenValves = {
-//         ...openedValves,
-//         [valveId1]: true,
-//       };
-//       const newOpenValveIds = Object.keys(newOpenValves);
-//       const memoizedKey = getMemoizedKey(
-//         valveId1,
-//         adjacentValveId2,
-//         newOpenValveIds,
-//         minutesRemaining - 1
-//       );
-//       if (memoizedValves[memoizedKey] === undefined) {
-//         memoizedValves[memoizedKey] = getMaxPressureReleased(
-//           valveId1,
-//           adjacentValveId2,
-//           newOpenValves,
-//           minutesRemaining - 1
-//         );
-//       }
-//       if (isMainCall) {
-//         console.log(minutesRemaining, "Done with ", valveId1, adjacentValveId2);
-//       }
+    if (!openedValves[valveId1] && flowRate1 !== 0) {
+      const newOpenValves = {
+        ...openedValves,
+        [valveId1]: true,
+      };
+      const newOpenValveIds = Object.keys(newOpenValves);
+      const memoizedKey = getMemoizedKey(
+        valveId1,
+        valveId2,
+        newOpenValveIds,
+        minutesRemaining1 - 1,
+        minutesRemaining2
+      );
+      if (memoizedValves[memoizedKey] === undefined) {
+        memoizedValves[memoizedKey] = getMaxPressureReleased(
+          valveId1,
+          valveId2,
+          newOpenValves,
+          minutesRemaining1 - 1,
+          minutesRemaining2
+        );
+      }
 
-//       possibilities.push(
-//         minutesRemaining * flowRate1 + memoizedValves[memoizedKey]
-//       );
-//     }
-//   }
+      possibilities.push(
+        (minutesRemaining1 - 1) * flowRate1 + memoizedValves[memoizedKey]
+      );
+    }
+  }
 
-//   if (
-//     !openedValves[valveId1] &&
-//     flowRate1 !== 0 &&
-//     !openedValves[valveId2] &&
-//     flowRate2 !== 0 &&
-//     valveId1 !== valveId2
-//   ) {
-//     const newOpenValves = {
-//       ...openedValves,
-//       [valveId1]: true,
-//       [valveId2]: true,
-//     };
-//     const memoizedKey = getMemoizedKey(
-//       valveId1,
-//       valveId2,
-//       Object.keys(newOpenValves),
-//       minutesRemaining - 1
-//     );
-//     if (memoizedValves[memoizedKey] === undefined) {
-//       memoizedValves[memoizedKey] = getMaxPressureReleased(
-//         valveId1,
-//         valveId2,
-//         newOpenValves,
-//         minutesRemaining - 1
-//       );
-//     }
-//     if (isMainCall) {
-//       console.log(minutesRemaining, "Done with ", valveId1, valveId2);
-//     }
+  if (minutesRemaining2 > 0) {
+    for (const { id, distance } of adjacentValves2) {
+      const memoizedKey = getMemoizedKey(
+        valveId1,
+        id,
+        Object.keys(openedValves),
+        minutesRemaining1,
+        minutesRemaining2 - distance
+      );
+      if (memoizedValves[memoizedKey] === undefined) {
+        memoizedValves[memoizedKey] = getMaxPressureReleased(
+          valveId1,
+          id,
+          openedValves,
+          minutesRemaining1,
+          minutesRemaining2 - distance
+        );
+      }
+      possibilities.push(memoizedValves[memoizedKey]);
+    }
 
-//     possibilities.push(
-//       minutesRemaining * (flowRate1 + flowRate2) + memoizedValves[memoizedKey]
-//     );
-//   }
+    if (!openedValves[valveId2] && flowRate2 !== 0) {
+      const newOpenValves = {
+        ...openedValves,
+        [valveId2]: true,
+      };
+      const newOpenValveIds = Object.keys(newOpenValves);
+      const memoizedKey = getMemoizedKey(
+        valveId1,
+        valveId2,
+        newOpenValveIds,
+        minutesRemaining1,
+        minutesRemaining2 - 1
+      );
+      if (memoizedValves[memoizedKey] === undefined) {
+        memoizedValves[memoizedKey] = getMaxPressureReleased(
+          valveId1,
+          valveId2,
+          newOpenValves,
+          minutesRemaining1,
+          minutesRemaining2 - 1
+        );
+      }
 
-//   return Math.max(...possibilities);
-// };
+      possibilities.push(
+        (minutesRemaining2 - 1) * flowRate2 + memoizedValves[memoizedKey]
+      );
+    }
+  }
 
-// const START_VALVE_ID = "AA";
-// const result = getMaxPressureReleased(
-//   START_VALVE_ID,
-//   START_VALVE_ID,
-//   {},
-//   MINUTES_AVAILABLE - 1
-// );
-// console.log("Result : ", START_VALVE_ID, result);
+  return Math.max(...possibilities);
+};
+
+const MINUTES_AVAILABLE = 15;
+const START_VALVE_ID = "AA";
+const result = getMaxPressureReleased(
+  START_VALVE_ID,
+  START_VALVE_ID,
+  {},
+  MINUTES_AVAILABLE,
+  MINUTES_AVAILABLE
+);
+console.log("Result : ", START_VALVE_ID, result);
 
 // await fs.writeFile("memoizedValves.json", JSON.stringify(memoizedValves));
 // console.log(JSON.stringify(memoizedValves));
