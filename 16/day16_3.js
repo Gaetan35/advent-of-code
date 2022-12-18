@@ -174,16 +174,26 @@ const getMemoizedKey = ({
   )}|${minutesLeft1}|${minutesLeft2}`;
 };
 
-const cantReachMaxScore = (
+const canReachMaxScore = (
   infLimit,
-  minutesThreshold,
-  { minutesLeft1, minutesLeft2, openedValves },
+  { minutesLeft1, minutesLeft2, openedValves, score },
   flowRates
 ) => {
-  const closedFlowRates = flowRates.filter(
-    ({ valveId }) => !openedValves[valveId]
-  );
+  // const closedFlowRates = flowRates.filter(
+  //   ({ valveId }) => !openedValves[valveId]
+  // );
   const maxMinutesLeft = Math.max(minutesLeft1, minutesLeft2);
+  // const maxNewScoreToAdd =
+  //   4 * ((flowRates[0]?.flowRate ?? 0) + (flowRates[1]?.flowRate ?? 0));
+
+  // if (maxMinutesLeft <= 3 && maxNewScoreToAdd > maxAddedScore) {
+  //   maxAddedScore = maxNewScoreToAdd;
+  // }
+
+  if (maxMinutesLeft <= 7) {
+    return false;
+  }
+  return true;
 };
 
 console.time("Execution time");
@@ -192,9 +202,10 @@ const {
   nonNullValveIds,
   flowRates,
 } = await parseInput(false);
+// console.log(flowRates);
 const valves = simplifyGraph(rawValves);
 // console.dir(valves, { depth: null });
-const MINUTES_AVAILABLE = 15;
+const MINUTES_AVAILABLE = 20;
 const START_STATE = {
   valveId1: "AA",
   valveId2: "AA",
@@ -207,7 +218,7 @@ let MEMOIZED_STATES = {};
 let states = [START_STATE];
 let bestScore = 0;
 let iterations = 0;
-const INF_LIMIT = 785;
+const INF_LIMIT = 1708;
 while (states.length > 0) {
   iterations += 1;
   if (iterations % 1000000 === 0) {
@@ -231,86 +242,6 @@ while (states.length > 0) {
 
   const state = states.pop();
 
-  // if (
-  //   maxMinutesLeft <= 13 &&
-  //   state.score +
-  //     12 *
-  //       (closedFlowRates[0]?.flowRate ??
-  //         0 + closedFlowRates[1]?.flowRate ??
-  //         0) +
-  //     9 *
-  //       (closedFlowRates[2]?.flowRate ??
-  //         0 + closedFlowRates[3]?.flowRate ??
-  //         0) +
-  //     6 *
-  //       (closedFlowRates[4]?.flowRate ??
-  //         0 + closedFlowRates[5]?.flowRate ??
-  //         0) +
-  //     3 *
-  //       (closedFlowRates[6]?.flowRate ??
-  //         0 + closedFlowRates[7]?.flowRate ??
-  //         0) <
-  //     INF_LIMIT
-  // ) {
-  //   continue;
-  // }
-
-  // if (
-  //   maxMinutesLeft <= 10 &&
-  //   state.score +
-  //     9 *
-  //       (closedFlowRates[0]?.flowRate ??
-  //         0 + closedFlowRates[1]?.flowRate ??
-  //         0) +
-  //     6 *
-  //       (closedFlowRates[2]?.flowRate ??
-  //         0 + closedFlowRates[3]?.flowRate ??
-  //         0) +
-  //     3 *
-  //       (closedFlowRates[4]?.flowRate ??
-  //         0 + closedFlowRates[5]?.flowRate ??
-  //         0) <
-  //     INF_LIMIT
-  // ) {
-  //   continue;
-  // }
-
-  // if (
-  //   maxMinutesLeft <= 7 &&
-  //   state.score +
-  //     6 *
-  //       (closedFlowRates[0]?.flowRate ??
-  //         0 + closedFlowRates[1]?.flowRate ??
-  //         0) +
-  //     4 *
-  //       (closedFlowRates[2]?.flowRate ??
-  //         0 + closedFlowRates[3]?.flowRate ??
-  //         0) +
-  //     2 *
-  //       (closedFlowRates[4]?.flowRate ??
-  //         0 + closedFlowRates[5]?.flowRate ??
-  //         0) <
-  //     INF_LIMIT
-  // ) {
-  //   continue;
-  // }
-
-  if (
-    maxMinutesLeft <= 5 &&
-    state.score +
-      4 *
-        (closedFlowRates[0]?.flowRate ??
-          0 + closedFlowRates[1]?.flowRate ??
-          0) +
-      1 *
-        (closedFlowRates[2]?.flowRate ??
-          0 + closedFlowRates[3]?.flowRate ??
-          0) <
-      INF_LIMIT
-  ) {
-    continue;
-  }
-
   if (
     (state.minutesLeft1 <= 1 && state.minutesLeft2 <= 1) ||
     areAllValvesOpened(state.openedValves, nonNullValveIds)
@@ -320,6 +251,11 @@ while (states.length > 0) {
     }
     continue;
   }
+
+  if (!canReachMaxScore(INF_LIMIT, state, flowRates)) {
+    continue;
+  }
+
   const memoizedKey = getMemoizedKey(state);
   if (MEMOIZED_STATES[memoizedKey]) {
     continue;
@@ -332,7 +268,7 @@ console.log("Best score : ", bestScore);
 console.timeEnd("Execution time");
 
 // Result is more than 2081
-// Best score found yet is 2411 but it's false
+// Best score found yet is 2411 but it's false -> probably higher than 2411
 // and less that 3000
 
 // For 15 minutes result is 785
