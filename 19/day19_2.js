@@ -50,7 +50,18 @@ const computeNextStates = (
   };
   const nextStates = [doNothingState];
 
-  if (stocks.ore >= oreRobotOreCost) {
+  if (
+    stocks.ore >= oreRobotOreCost &&
+    robots.ore <
+      Math.max(
+        ...[
+          clayRobotOreCost,
+          oreRobotOreCost,
+          obsidianRobotOreCost,
+          geodeRobotOreCost,
+        ]
+      )
+  ) {
     nextStates.push({
       minutesLeft: minutesLeft - 1,
       robots: { ...robots, ore: robots.ore + 1 },
@@ -63,7 +74,7 @@ const computeNextStates = (
     });
   }
 
-  if (stocks.ore >= clayRobotOreCost) {
+  if (stocks.ore >= clayRobotOreCost && robots.clay < obsidianRobotClayCost) {
     nextStates.push({
       minutesLeft: minutesLeft - 1,
       robots: { ...robots, clay: robots.clay + 1 },
@@ -78,7 +89,8 @@ const computeNextStates = (
 
   if (
     stocks.ore >= obsidianRobotOreCost &&
-    stocks.clay >= obsidianRobotClayCost
+    stocks.clay >= obsidianRobotClayCost &&
+    robots.obsidian < geodeRobotObsidianCost
   ) {
     nextStates.push({
       minutesLeft: minutesLeft - 1,
@@ -197,47 +209,46 @@ const computeBlueprintScore = (blueprint, infLimit) => {
 };
 
 const blueprints = (await parseInput(false)).slice(0, 3);
-// const blueprintScores = blueprints.map(computeBlueprintScore);
-// console.log(blueprintScores);
 
-// const infLimits = Array.from({ length: blueprints.length }, () => 0);
-// const qualityLevels = {};
-// let haveAllFinished = false;
-// while (!haveAllFinished) {
-//   haveAllFinished = true;
-//   for (let i = 0; i < blueprints.length; i++) {
-//     if (qualityLevels[i] !== undefined) {
-//       continue;
-//     }
-//     const { hasFinished, bestScoreYet, qualityLevel } = computeBlueprintScore(
-//       blueprints[i],
-//       infLimits[i]
-//     );
-//     if (!hasFinished) {
-//       haveAllFinished = false;
-//       infLimits[i] = bestScoreYet;
-//     } else {
-//       qualityLevels[i] = qualityLevel;
-//     }
-//   }
-//   console.log("-----------");
-//   console.log(" ");
-//   console.log(`${Object.values(qualityLevels).length} have finished`);
-//   console.log(" ");
-//   console.log("-----------");
-// }
+const infLimits = Array.from({ length: blueprints.length }, () => 0);
+const qualityLevels = {};
+let haveAllFinished = false;
+while (!haveAllFinished) {
+  haveAllFinished = true;
+  for (let i = 0; i < blueprints.length; i++) {
+    if (qualityLevels[i] !== undefined) {
+      continue;
+    }
+    const { hasFinished, bestScoreYet, qualityLevel } = computeBlueprintScore(
+      blueprints[i],
+      infLimits[i]
+    );
+    if (!hasFinished) {
+      haveAllFinished = false;
+      infLimits[i] = bestScoreYet;
+    } else {
+      qualityLevels[i] = qualityLevel;
+    }
+  }
+  console.log("-----------");
+  console.log(" ");
+  console.log(`${Object.values(qualityLevels).length} have finished`);
+  console.log(" ");
+  console.log("-----------");
+}
 
-// const result = Object.values(qualityLevels).reduce(
-//   (acc, qualityLevel) => acc * qualityLevel,
-//   1
-// );
+const result = Object.values(qualityLevels).reduce(
+  (acc, qualityLevel) => acc * qualityLevel,
+  1
+);
 
-// console.log("Quality levels : ", qualityLevels);
-// console.log("Inf limits : ", infLimits);
-// console.log("Result : ", result);
+console.log("Quality levels : ", qualityLevels);
+console.log("Inf limits : ", infLimits);
+console.log("Result : ", result);
 
-const result = computeBlueprintScore(blueprints[0], 15);
-console.log(result);
+// const result = computeBlueprintScore(blueprints[0], 15);
+// console.log(result);
+
 // Blueprint 1 -> best yet is 9, less than 17
 // Blueprint 2 -> max = 27
 // Blueprint 3 -> max is 28
