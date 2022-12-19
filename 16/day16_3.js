@@ -179,21 +179,17 @@ const canReachMaxScore = (
   { minutesLeft1, minutesLeft2, openedValves, score },
   flowRates
 ) => {
-  // const closedFlowRates = flowRates.filter(
-  //   ({ valveId }) => !openedValves[valveId]
-  // );
+  const closedFlowRates = flowRates.filter(
+    ({ valveId }) => !openedValves[valveId]
+  );
   const maxMinutesLeft = Math.max(minutesLeft1, minutesLeft2);
-  // const maxNewScoreToAdd =
-  //   4 * ((flowRates[0]?.flowRate ?? 0) + (flowRates[1]?.flowRate ?? 0));
-
-  // if (maxMinutesLeft <= 3 && maxNewScoreToAdd > maxAddedScore) {
-  //   maxAddedScore = maxNewScoreToAdd;
-  // }
-
-  if (maxMinutesLeft <= 7) {
-    return false;
-  }
-  return true;
+  const maxAddedScore = closedFlowRates.reduce(
+    (acc, flowRate, index) =>
+      acc +
+      flowRate.flowRate * Math.max(maxMinutesLeft - Math.floor(index / 2), 0),
+    0
+  );
+  return score + maxAddedScore >= infLimit;
 };
 
 console.time("Execution time");
@@ -202,10 +198,8 @@ const {
   nonNullValveIds,
   flowRates,
 } = await parseInput(false);
-// console.log(flowRates);
 const valves = simplifyGraph(rawValves);
-// console.dir(valves, { depth: null });
-const MINUTES_AVAILABLE = 20;
+const MINUTES_AVAILABLE = 26;
 const START_STATE = {
   valveId1: "AA",
   valveId2: "AA",
@@ -218,7 +212,7 @@ let MEMOIZED_STATES = {};
 let states = [START_STATE];
 let bestScore = 0;
 let iterations = 0;
-const INF_LIMIT = 1708;
+const INF_LIMIT = 2000;
 while (states.length > 0) {
   iterations += 1;
   if (iterations % 1000000 === 0) {
@@ -272,4 +266,6 @@ console.timeEnd("Execution time");
 // and less that 3000
 
 // For 15 minutes result is 785
-// For 20 minutes result is 1443 (not confirmed, reached in around 1.6 seconds on my best shot)
+// For 20 minutes result is 1443 (not confirmed, reached in around 27.6s / 46 M iterations on my best shot)
+// For 26 minutes
+//  - False result with InfLimit = 2400 is obtained in 5m21s / 544 L iterations
