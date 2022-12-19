@@ -162,6 +162,81 @@ const computeNextStates = (
   return nextStates;
 };
 
+const computeNextStates2 = (
+  { valveId1, valveId2, minutesLeft1, minutesLeft2, openedValves, score },
+  valves
+) => {
+  const nextStates = [];
+  const { adjacentValves: adjacentValves1, flowRate: flowRate1 } =
+    valves[valveId1];
+  const { adjacentValves: adjacentValves2, flowRate: flowRate2 } =
+    valves[valveId2];
+
+  if (minutesLeft1 > 0) {
+    for (const { id, distance } of adjacentValves1) {
+      const nextState = {
+        valveId1: id,
+        valveId2,
+        minutesLeft1: minutesLeft1 - distance,
+        minutesLeft2,
+        openedValves,
+        score,
+      };
+      nextStates.push(nextState);
+    }
+
+    if (!openedValves[valveId1] && flowRate1 !== 0) {
+      const newOpenValves = {
+        ...openedValves,
+        [valveId1]: true,
+      };
+      const nextState = {
+        valveId1,
+        valveId2,
+        minutesLeft1: minutesLeft1 - 1,
+        minutesLeft2,
+        openedValves: newOpenValves,
+        score: score + flowRate1 * (minutesLeft1 - 1),
+      };
+
+      nextStates.push(nextState);
+    }
+  }
+
+  if (minutesLeft2 > 0) {
+    for (const { id, distance } of adjacentValves2) {
+      const nextState = {
+        valveId1,
+        valveId2: id,
+        minutesLeft1,
+        minutesLeft2: minutesLeft2 - distance,
+        openedValves,
+        score,
+      };
+      nextStates.push(nextState);
+    }
+
+    if (!openedValves[valveId2] && flowRate2 !== 0) {
+      const newOpenValves = {
+        ...openedValves,
+        [valveId2]: true,
+      };
+      const nextState = {
+        valveId1,
+        valveId2,
+        minutesLeft1,
+        minutesLeft2: minutesLeft2 - 1,
+        openedValves: newOpenValves,
+        score: score + flowRate2 * (minutesLeft2 - 1),
+      };
+
+      nextStates.push(nextState);
+    }
+  }
+
+  return nextStates;
+};
+
 const getMemoizedKey = ({
   valveId1,
   valveId2,
@@ -186,7 +261,8 @@ const canReachMaxScore = (
   const maxAddedScore = closedFlowRates.reduce(
     (acc, flowRate, index) =>
       acc +
-      flowRate.flowRate * Math.max(maxMinutesLeft - Math.floor(index / 2), 0),
+      flowRate.flowRate *
+        Math.max(maxMinutesLeft - 1 - (index - (index % 2)), 0),
     0
   );
   return score + maxAddedScore >= infLimit;
@@ -199,7 +275,8 @@ const {
   flowRates,
 } = await parseInput(false);
 const valves = simplifyGraph(rawValves);
-const MINUTES_AVAILABLE = 26;
+const MINUTES_AVAILABLE = 20;
+const INF_LIMIT = 1443;
 const START_STATE = {
   valveId1: "AA",
   valveId2: "AA",
@@ -212,7 +289,6 @@ let MEMOIZED_STATES = {};
 let states = [START_STATE];
 let bestScore = 0;
 let iterations = 0;
-const INF_LIMIT = 2000;
 while (states.length > 0) {
   iterations += 1;
   if (iterations % 1000000 === 0) {
@@ -229,7 +305,7 @@ while (states.length > 0) {
     console.log("after filter : ", states.length);
   }
 
-  if (iterations % 55000000 === 0) {
+  if (iterations % 50000000 === 0) {
     console.log("Clearing cache");
     MEMOIZED_STATES = {};
   }
@@ -256,7 +332,7 @@ while (states.length > 0) {
   }
   MEMOIZED_STATES[memoizedKey] = true;
 
-  states.push(...computeNextStates(state, valves));
+  states.push(...computeNextStates2(state, valves));
 }
 console.log("Best score : ", bestScore);
 console.timeEnd("Execution time");
@@ -266,6 +342,6 @@ console.timeEnd("Execution time");
 // and less that 3000
 
 // For 15 minutes result is 785
-// For 20 minutes result is 1443 (not confirmed, reached in around 27.6s / 46 M iterations on my best shot)
+// For 20 minutes result is 1449
 // For 26 minutes
 //  - False result with InfLimit = 2400 is obtained in 5m21s / 544 L iterations
