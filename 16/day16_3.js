@@ -257,14 +257,29 @@ const canReachMaxScore = (
   const closedFlowRates = flowRates.filter(
     ({ valveId }) => !openedValves[valveId]
   );
-  const maxMinutesLeft = Math.max(minutesLeft1, minutesLeft2);
-  const maxAddedScore = closedFlowRates.reduce(
-    (acc, flowRate, index) =>
-      acc +
-      flowRate.flowRate *
-        Math.max(maxMinutesLeft - 1 - (index - (index % 2)), 0),
-    0
-  );
+  // const maxMinutesLeft = Math.max(minutesLeft1, minutesLeft2);
+  let maxAddedScore = 0;
+  let timeLeft1 = minutesLeft1;
+  let timeLeft2 = minutesLeft2;
+  let valveIndex = 0;
+  while (timeLeft1 + timeLeft2 > 0 && valveIndex < closedFlowRates.length) {
+    const max = Math.max(timeLeft1, timeLeft2);
+    maxAddedScore +=
+      closedFlowRates[valveIndex].flowRate * Math.max(max - 1, 0);
+    valveIndex += 1;
+    if (timeLeft1 > timeLeft2) {
+      timeLeft1 -= 2;
+    } else {
+      timeLeft2 -= 2;
+    }
+  }
+  // const maxAddedScore = closedFlowRates.reduce(
+  //   (acc, flowRate, index) =>
+  //     acc +
+  //     flowRate.flowRate *
+  //       Math.max(maxMinutesLeft - 1 - (index - (index % 2)), 0),
+  //   0
+  // );
   return score + maxAddedScore >= infLimit;
 };
 
@@ -275,8 +290,8 @@ const {
   flowRates,
 } = await parseInput(false);
 const valves = simplifyGraph(rawValves);
-const MINUTES_AVAILABLE = 20;
-const INF_LIMIT = 1443;
+const MINUTES_AVAILABLE = 26;
+const INF_LIMIT = 2410;
 const START_STATE = {
   valveId1: "AA",
   valveId2: "AA",
@@ -342,6 +357,5 @@ console.timeEnd("Execution time");
 // and less that 3000
 
 // For 15 minutes result is 785
-// For 20 minutes result is 1449
-// For 26 minutes
-//  - False result with InfLimit = 2400 is obtained in 5m21s / 544 L iterations
+// For 20 minutes result is 1449 obtained in 1389 M iterations / 18m38s (second try: 36 M / 25s)
+// For 26 minutes : best is 2455, obtained as intermediate result without waiting for the whole algorithm to run
