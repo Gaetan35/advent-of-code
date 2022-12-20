@@ -25,7 +25,7 @@ const buildListFromIndexes = (numbers, currentIndexes) => {
   return result;
 };
 
-const mixNumbers = (numbers) => {
+const mixNumbers = (numbers, numberOfMixing) => {
   const listLength = numbers.length;
 
   // Key = original index, value = currentIndex
@@ -37,87 +37,85 @@ const mixNumbers = (numbers) => {
     {}
   );
 
-  for (let indexToMove = 0; indexToMove < listLength; indexToMove++) {
-    const oldIndex = currentIndexes[indexToMove];
+  for (let mixingCount = 0; mixingCount < numberOfMixing; mixingCount++) {
+    for (let indexToMove = 0; indexToMove < listLength; indexToMove++) {
+      const oldIndex = currentIndexes[indexToMove];
 
-    let newIndex =
-      (oldIndex +
-        (numbers[indexToMove] % (listLength - 1)) +
-        3 * (listLength - 1)) %
-      (listLength - 1);
-    // for (
-    //   let i = 0;
-    //   i < Math.abs(numbers[indexToMove]) % (listLength - 1);
-    //   i++
-    // ) {
-    //   newIndex += numbers[indexToMove] / Math.abs(numbers[indexToMove]);
-    //   if (newIndex === listLength) {
-    //     newIndex = 1;
-    //   } else if (newIndex === -1) {
-    //     newIndex = listLength - 2;
-    //   }
-    // }
-    // if (numbers[indexToMove] > 0) {
+      let newIndex =
+        (oldIndex +
+          (numbers[indexToMove] % (listLength - 1)) +
+          3 * (listLength - 1)) %
+        (listLength - 1);
+      // for (
+      //   let i = 0;
+      //   i < Math.abs(numbers[indexToMove]) % (listLength - 1);
+      //   i++
+      // ) {
+      //   newIndex += numbers[indexToMove] / Math.abs(numbers[indexToMove]);
+      //   if (newIndex === listLength) {
+      //     newIndex = 1;
+      //   } else if (newIndex === -1) {
+      //     newIndex = listLength - 2;
+      //   }
+      // }
+      // if (numbers[indexToMove] > 0) {
 
-    // }
+      // }
 
-    if (oldIndex < newIndex) {
-      for (let i = 0; i < listLength; i++) {
-        if (i === indexToMove) {
-          currentIndexes[indexToMove] = newIndex;
-        } else if (
-          currentIndexes[i] > oldIndex &&
-          currentIndexes[i] <= newIndex
-        ) {
-          currentIndexes[i] -= 1;
+      if (oldIndex < newIndex) {
+        for (let i = 0; i < listLength; i++) {
+          if (i === indexToMove) {
+            currentIndexes[indexToMove] = newIndex;
+          } else if (
+            currentIndexes[i] > oldIndex &&
+            currentIndexes[i] <= newIndex
+          ) {
+            currentIndexes[i] -= 1;
+          }
+        }
+      }
+
+      if (oldIndex > newIndex) {
+        for (let i = 0; i < listLength; i++) {
+          if (i === indexToMove) {
+            currentIndexes[indexToMove] = newIndex;
+          } else if (
+            currentIndexes[i] < oldIndex &&
+            currentIndexes[i] >= newIndex
+          ) {
+            currentIndexes[i] += 1;
+          }
         }
       }
     }
-
-    if (oldIndex > newIndex) {
-      for (let i = 0; i < listLength; i++) {
-        if (i === indexToMove) {
-          currentIndexes[indexToMove] = newIndex;
-        } else if (
-          currentIndexes[i] < oldIndex &&
-          currentIndexes[i] >= newIndex
-        ) {
-          currentIndexes[i] += 1;
-        }
-      }
-    }
+    // console.log(
+    //   `After ${mixingCount + 1} round of mixing:\n ${buildListFromIndexes(
+    //     numbers,
+    //     currentIndexes
+    //   ).join(", ")}\n`
+    // );
   }
+
   return buildListFromIndexes(numbers, currentIndexes);
 };
 
-const numbers = await parseInput(true);
+const numbers = await parseInput(false);
 // console.log(numbers.length);
 // console.log([...new Set(numbers)].length);
 const DECRYPTION_KEY = 811589153;
 const NUMBER_OF_MIXING = 10;
-let decryptedNumbers = numbers.map((number) => number * DECRYPTION_KEY);
+const decryptedNumbers = numbers.map((number) => number * DECRYPTION_KEY);
 console.log("Decrypted numbers : ", decryptedNumbers);
+const result = mixNumbers(decryptedNumbers, NUMBER_OF_MIXING);
 
-for (let mixingCount = 0; mixingCount < NUMBER_OF_MIXING; mixingCount++) {
-  decryptedNumbers = mixNumbers(decryptedNumbers);
-  console.log(
-    `After ${mixingCount + 1} round of mixing:\n ${decryptedNumbers.join(
-      ", "
-    )}\n`
-  );
-}
-
-const zeroIndex = decryptedNumbers.indexOf(0);
+const zeroIndex = result.indexOf(0);
 console.log("zeroIndex : ", zeroIndex);
 // console.log(result[zeroIndex]);
 // console.log(result[zeroIndex + 1000]);
 // console.log(result[zeroIndex + 2000]);
-const value1000 =
-  decryptedNumbers[(zeroIndex + 1000) % decryptedNumbers.length];
-const value2000 =
-  decryptedNumbers[(zeroIndex + 2000) % decryptedNumbers.length];
-const value3000 =
-  decryptedNumbers[(zeroIndex + 3000) % decryptedNumbers.length];
+const value1000 = result[(zeroIndex + 1000) % result.length];
+const value2000 = result[(zeroIndex + 2000) % result.length];
+const value3000 = result[(zeroIndex + 3000) % result.length];
 
 console.log("Values found : ", value1000, value2000, value3000);
 console.log("Sum : ", value1000 + value2000 + value3000);
