@@ -39,12 +39,21 @@ const mixNumbers = (numbers) => {
 
   for (let indexToMove = 0; indexToMove < listLength; indexToMove++) {
     const oldIndex = currentIndexes[indexToMove];
-    let newIndex = numbers[indexToMove] + oldIndex;
-    if (newIndex <= 0) {
-      newIndex = (newIndex + 10 * (listLength - 1)) % (listLength - 1);
-    } else if (newIndex >= listLength) {
-      newIndex = newIndex % (listLength - 1);
+    let newIndex = oldIndex;
+    for (let i = 0; i < Math.abs(numbers[indexToMove]); i++) {
+      newIndex += numbers[indexToMove] / Math.abs(numbers[indexToMove]);
+      if (newIndex === listLength) {
+        newIndex = 1;
+      } else if (newIndex === -1) {
+        newIndex = listLength - 2;
+      }
     }
+    // let newIndex = numbers[indexToMove] + oldIndex;
+    // if (newIndex <= 0) {
+    //   newIndex = (newIndex + 10 * (listLength - 1)) % (listLength - 1);
+    // } else if (newIndex >= listLength) {
+    //   newIndex = newIndex % (listLength - 1);
+    // }
 
     if (oldIndex < newIndex) {
       for (let i = 0; i < listLength; i++) {
@@ -80,7 +89,7 @@ const numbers = await parseInput(false);
 // console.log([...new Set(numbers)].length);
 
 const result = mixNumbers(numbers);
-console.log(Math.max(...result));
+console.log(result);
 const zeroIndex = result.indexOf(0);
 console.log("zeroIndex : ", zeroIndex);
 // console.log(result[zeroIndex]);
