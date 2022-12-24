@@ -84,14 +84,18 @@ const possibleMoves = [
   { dx: 0, dy: 1 },
 ];
 
-const CACHE = {};
-
-const computeDistance = (grid) => {
+const computeDistance = (
+  grid,
+  startMinute,
+  startX,
+  startY,
+  endPosX,
+  endPosY
+) => {
   const width = grid[0].length;
   const height = grid.length;
-  const startPos = { x: grid[0].indexOf("."), y: 0 };
-  const endPos = { x: grid[height - 1].indexOf("."), y: height - 1 };
-  const nodes = [{ x: startPos.x, y: startPos.y, minute: 0 }];
+  const nodes = [{ x: startX, y: startY, minute: startMinute }];
+  const CACHE = {};
 
   let minDistance;
   let iterations = 0;
@@ -99,24 +103,24 @@ const computeDistance = (grid) => {
     iterations += 1;
     const { x, y, minute: nodeMinute } = nodes.shift();
 
-    if (iterations % 10000 === 0) {
-      console.log(
-        `${iterations / 10000} - ${
-          nodes.length
-        } - minDistance: ${minDistance} - nodeMinute: ${nodeMinute}`
-      );
-    }
+    // if (iterations % 10000 === 0) {
+    //   console.log(
+    //     `${iterations / 10000} - ${
+    //       nodes.length
+    //     } - minDistance: ${minDistance} - nodeMinute: ${nodeMinute}`
+    //   );
+    // }
 
-    if (x === endPos.x && y === endPos.y) {
+    if (x === endPosX && y === endPosY) {
       if (minDistance === undefined || nodeMinute < minDistance) {
         minDistance = nodeMinute;
-        console.log("New min distance : ", minDistance);
+        // console.log("New min distance : ", minDistance);
       }
     }
 
     if (
       minDistance &&
-      nodeMinute + Math.abs(endPos.x - x) + Math.abs(endPos.y - y) > minDistance
+      nodeMinute + Math.abs(endPosX - x) + Math.abs(endPosY - y) > minDistance
     ) {
       continue;
     }
@@ -143,11 +147,41 @@ const computeDistance = (grid) => {
       }
     }
   }
-  return minDistance;
+  return minDistance - startMinute;
 };
 
 const grid = await parseInput(false);
 const startingVortexes = getVortexes(grid);
 const VORTEXES_BY_MINUTE = [startingVortexes];
-const result = computeDistance(grid, startingVortexes);
-console.log("Result : ", result);
+
+const startPos = { x: grid[0].indexOf("."), y: 0 };
+const endPos = { x: grid[grid.length - 1].indexOf("."), y: grid.length - 1 };
+
+const startToGoalTime = computeDistance(
+  grid,
+  0,
+  startPos.x,
+  startPos.y,
+  endPos.x,
+  endPos.y
+);
+console.log("Start to goal : ", startToGoalTime);
+const goalToStartTime = computeDistance(
+  grid,
+  startToGoalTime,
+  endPos.x,
+  endPos.y,
+  startPos.x,
+  startPos.y
+);
+console.log("Goal to start : ", goalToStartTime);
+const startToGoalTime2 = computeDistance(
+  grid,
+  startToGoalTime + goalToStartTime,
+  startPos.x,
+  startPos.y,
+  endPos.x,
+  endPos.y
+);
+console.log("Start to goal 2 : ", startToGoalTime2);
+console.log("Result : ", startToGoalTime + goalToStartTime + startToGoalTime2);
