@@ -51,5 +51,3 @@ const result = fileContent.split("\n").reduce((previous, line) => {
 }, 0);
 
 console.log(result);
-
-// 53998 is too low
