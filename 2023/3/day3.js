@@ -9,7 +9,7 @@ const parseTextInput = async (isTest = false) => {
   return grid;
 };
 
-const grid = await parseTextInput(true);
+const grid = await parseTextInput(false);
 const height = grid.length;
 const width = grid[0].length;
 
@@ -29,44 +29,77 @@ const findHasSymbolAdjacent = (grid, x, y) => {
   for (const { dx, dy } of adjacentCells) {
     const neighborX = x + dx;
     const neighborY = y + dy;
-    if (
-      neighborX < 0 ||
-      neighborY < 0 ||
-      neighborX >= width ||
-      neighborY >= height
-    ) {
-      continue;
-    }
 
-    if (
-      grid[neighborY][neighborX].match(symbolRegex) ||
-      (dx !== 0 && dy !== 0 && grid[neighborY][neighborX] !== ".")
-    ) {
+    if (grid?.[neighborY]?.[neighborX]?.match(symbolRegex)) {
       return true;
     }
   }
 };
 
-const digitRegex = /[0-9]/;
+const digitRegex = /\d/;
 const partNumbers = [];
 let result = 0;
-for (let y = 0; y < height; y++) {
+for (let y = 0; y < height; y += 1) {
   let digits = [];
-  for (let x = 0; x < width; x++) {
+  for (let x = 0; x < width; x += 1) {
     const cell = grid[y][x];
     if (cell.match(digitRegex)) {
-      digits.push({ cell, x, y });
+      digits.push({ cell, cellX: x, cellY: y });
     } else {
       if (digits.length) {
-        partNumbers.push(Number(digits.join("")));
-        result += Number(digits.map(({ cell }) => cell).join(""));
+        const hasSymbolAdjacent = digits.some(({ cellX, cellY }) =>
+          findHasSymbolAdjacent(grid, cellX, cellY)
+        );
+        if (hasSymbolAdjacent) {
+          partNumbers.push(Number(digits.map(({ cell }) => cell).join("")));
+          result += Number(digits.map(({ cell }) => cell).join(""));
+        }
       }
       digits = [];
     }
   }
+
+  if (digits.length) {
+    const hasSymbolAdjacent = digits.some(({ cellX, cellY }) =>
+      findHasSymbolAdjacent(grid, cellX, cellY)
+    );
+    if (hasSymbolAdjacent) {
+      partNumbers.push(Number(digits.map(({ cell }) => cell).join("")));
+      result += Number(digits.map(({ cell }) => cell).join(""));
+    }
+  }
+  digits = [];
 }
 
 console.log(partNumbers);
 console.log(result);
 
+// const isTest = false;
+// const file = (
+//   await fs.readFile(isTest ? "input_test.txt" : "input.txt")
+// ).toString();
+// const allDigitRegex = /\d+/g;
+// const numbers = [...file.matchAll(allDigitRegex)].map((match) =>
+//   Number(match[0])
+// );
+// console.log(numbers);
+
+// console.log(
+//   "equality : ",
+//   JSON.stringify(partNumbers) === JSON.stringify(numbers)
+// );
+// for (let i = 0; i < numbers.length; i += 1) {
+//   if (numbers[i] !== partNumbers[i]) {
+//     console.log(
+//       `Index ${i}, should find ${numbers[i]} but found ${partNumbers[i]} instead`
+//     );
+//     break;
+//   }
+// }
+// console.log(numbers.slice(140, 150));
+
+//
+//
+//
 // 518219 is too low
+// 996543 is too high
