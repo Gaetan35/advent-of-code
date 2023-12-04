@@ -68,7 +68,6 @@ for (let y = 0; y < height; y += 1) {
       result += Number(digits.map(({ cell }) => cell).join(""));
     }
   }
-  digits = [];
 }
 
 console.log(partNumbers);
