@@ -69,7 +69,6 @@ const parseTextInput = async (isTest = false) => {
 };
 
 const hands = await parseTextInput(false);
-// console.log(hands);
 
 hands.sort((hand1, hand2) => {
   if (hand2.type > hand1.type) {
