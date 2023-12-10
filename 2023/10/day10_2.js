@@ -97,7 +97,7 @@ const findLoopGrid = (grid) => {
   const loopGrid = Array.from({ length: HEIGHT }, () =>
     Array.from({ length: WIDTH }, () => NON_VISITED_TILE)
   );
-  loopGrid[startPos.y][startPos.x] = "X";
+  loopGrid[startPos.y][startPos.x] = "S";
   while (queue.length > 0) {
     const currentPos = queue.shift();
 
@@ -105,21 +105,61 @@ const findLoopGrid = (grid) => {
 
     neighbors.forEach(({ x: neighborX, y: neighborY }) => {
       if (loopGrid[neighborY][neighborX] === NON_VISITED_TILE) {
-        loopGrid[neighborY][neighborX] = "X";
+        loopGrid[neighborY][neighborX] = grid[neighborY][neighborX];
 
         queue.push({ x: neighborX, y: neighborY });
       }
     });
   }
 
-  // loopGrid.forEach((line) => {
-  //   line.unshift(NON_VISITED_TILE);
-  //   line.push(NON_VISITED_TILE);
-  // });
-  // loopGrid.unshift(Array.from({ length: WIDTH + 2 }, () => NON_VISITED_TILE));
-  // loopGrid.push(Array.from({ length: WIDTH + 2 }, () => NON_VISITED_TILE));
+  loopGrid.forEach((line) => {
+    line.unshift(NON_VISITED_TILE);
+    line.push(NON_VISITED_TILE);
+  });
+  loopGrid.unshift(Array.from({ length: WIDTH + 2 }, () => NON_VISITED_TILE));
+  loopGrid.push(Array.from({ length: WIDTH + 2 }, () => NON_VISITED_TILE));
 
   return loopGrid;
+};
+
+const computedEnlargeGrid = (grid) => {
+  const NEW_HEIGHT = 2 * grid.length;
+  const NEW_WIDTH = 2 * grid[0].length;
+  const newGrid = Array.from({ length: NEW_HEIGHT }, (_, y) =>
+    Array.from({ length: NEW_WIDTH }, (_, x) => {
+      if (x % 2 === 0 && y % 2 === 0) {
+        return grid[y / 2][x / 2];
+      }
+      if (x === 0 || y === 0 || y === NEW_HEIGHT - 1 || x === NEW_WIDTH - 1) {
+        return ".";
+      }
+      if (x % 2 === 1 && y % 2 === 1) {
+        return ".";
+      }
+      if (x % 2 === 1) {
+        const leftTile = grid[y / 2][Math.floor(x / 2)];
+        const rightTile = grid[y / 2][Math.floor(x / 2) + 1];
+        if (
+          ["S", "F", "L", "-"].includes(leftTile) &&
+          ["S", "7", "J", "-"].includes(rightTile)
+        ) {
+          return "-";
+        }
+      }
+      if (y % 2 === 1) {
+        const topTile = grid[Math.floor(y / 2)][x / 2];
+        const bottomTile = grid[Math.floor(y / 2) + 1][x / 2];
+        if (
+          ["S", "F", "7", "|"].includes(topTile) &&
+          ["S", "L", "J", "|"].includes(bottomTile)
+        ) {
+          return "|";
+        }
+      }
+      return ".";
+    })
+  );
+  return newGrid;
 };
 
 const findAdjacentTiles = (grid, node) => {
@@ -139,14 +179,11 @@ const findAdjacentTiles = (grid, node) => {
 };
 
 const markOutsideTiles = (grid) => {
-  const NON_VISITED_TILE = ".";
   const HEIGHT = grid.length;
   const WIDTH = grid[0].length;
 
   const outsideTilesGrid = Array.from({ length: HEIGHT }, (_, y) =>
-    Array.from({ length: WIDTH }, (_, x) =>
-      grid[y][x] === "X" ? "X" : NON_VISITED_TILE
-    )
+    Array.from({ length: WIDTH }, (_, x) => grid[y][x])
   );
 
   const stack = [{ x: 0, y: 0 }];
@@ -154,7 +191,7 @@ const markOutsideTiles = (grid) => {
     const node = stack.pop();
     const neighbors = findAdjacentTiles(grid, node);
     neighbors.forEach(({ x, y }) => {
-      if (outsideTilesGrid[y][x] === NON_VISITED_TILE) {
+      if (outsideTilesGrid[y][x] === ".") {
         outsideTilesGrid[y][x] = "O";
         stack.push({ x, y });
       }
@@ -163,71 +200,36 @@ const markOutsideTiles = (grid) => {
   return outsideTilesGrid;
 };
 
-const findInsideTiles = (grid) => {
-  const HEIGHT = grid.length;
-  const WIDTH = grid[0].length;
+const reduceGridAndCount = (grid) => {
+  const NEW_HEIGHT = grid.length / 2;
+  const NEW_WIDTH = grid[0].length / 2;
 
-  const insideTilesPerLine = Array.from({ length: HEIGHT }, (_, y) =>
-    Array.from({ length: WIDTH }, (_, x) => (grid[y][x] === "X" ? "X" : "."))
+  let count = 0;
+  const reducedGrid = Array.from({ length: NEW_HEIGHT }, (_, y) =>
+    Array.from({ length: NEW_WIDTH }, (_, x) => {
+      const tile = grid[y * 2][x * 2];
+      if (tile === ".") {
+        count += 1;
+        return "I";
+      }
+      return tile;
+    })
   );
 
-  for (let y = 0; y < HEIGHT; y++) {
-    let isInside = false;
-    for (let x = 0; x < WIDTH; x++) {
-      const tile = grid[y][x];
-      if (tile === "X") {
-        isInside = !isInside;
-      } else if (tile === "." && isInside) {
-        insideTilesPerLine[y][x] = "I";
-      }
-    }
-  }
-
-  const insideTilesPerColumn = Array.from({ length: HEIGHT }, (_, y) =>
-    Array.from({ length: WIDTH }, (_, x) => (grid[y][x] === "X" ? "X" : "."))
-  );
-
-  for (let x = 0; x < WIDTH; x++) {
-    let isInside = false;
-    for (let y = 0; y < HEIGHT; y++) {
-      const tile = grid[y][x];
-      if (tile === "X") {
-        isInside = !isInside;
-      } else if (tile === "." && isInside) {
-        insideTilesPerColumn[y][x] = "I";
-      }
-    }
-  }
-
-  const insideTilesGrid = Array.from({ length: HEIGHT }, (_, y) =>
-    Array.from({ length: WIDTH }, (_, x) =>
-      insideTilesPerLine[y][x] === "I" && insideTilesPerColumn[y][x] === "I"
-        ? "I"
-        : grid[y][x]
-    )
-  );
-
-  let insideTilesCount = 0;
-  for (let x = 0; x < WIDTH; x++) {
-    for (let y = 0; y < HEIGHT; y++) {
-      if (insideTilesGrid[y][x] === "I") {
-        insideTilesCount += 1;
-      }
-    }
-  }
-  return [insideTilesGrid, insideTilesCount];
+  return [count, reducedGrid];
 };
-const grid = await parseTextInput(true, 5);
+
+const grid = await parseTextInput(false, 4);
 
 const loopGrid = findLoopGrid(grid);
 
-const [insideTilesGrid, insideTilesCount] = findInsideTiles(loopGrid);
+const enlargedGrid = computedEnlargeGrid(loopGrid);
+
+const markedOutsideGrid = markOutsideTiles(enlargedGrid);
+
+const [count, reducedGrid] = reduceGridAndCount(markedOutsideGrid);
 
 console.log("\n\n");
-prettyPrint(insideTilesGrid);
+prettyPrint(reducedGrid);
 console.log("\n\n");
-console.log("Result : ", insideTilesCount);
-
-// const outsideTilesGrid = markOutsideTiles(loopGrid);
-
-// prettyPrint(outsideTilesGrid);
+console.log("Inside tiles: ", count);
