@@ -76,9 +76,6 @@ const findNeighbors = (grid, { x, y }) => {
   if (x < grid[0].length - 1 && ["-", "J", "7"].includes(grid[y][x + 1])) {
     startNeighbors.push({ x: x + 1, y });
   }
-  if (startNeighbors.length > 2) {
-    throw new Error("Should not have more than 2 neighbors for start tile");
-  }
   return startNeighbors;
 };
 
