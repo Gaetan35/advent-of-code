@@ -1,20 +1,23 @@
 import * as fs from "fs/promises";
 
+const replaceAt = (string, index, replacement) => {
+  return (
+    string.substring(0, index) +
+    replacement +
+    string.substring(index + replacement.length)
+  );
+};
+
 const parseTextInput = async (isTest = false) => {
   const input = (await fs.readFile(isTest ? "input_test.txt" : "input.txt"))
     .toString()
     .split("\n")
     .map((line) => {
       const [springsString, sizesString] = line.split(" ");
-      const repeatedSprings = springsString.concat("?").repeat(5);
-      const sizes = sizesString
-        .concat(",")
-        .repeat(5)
-        .split(",")
-        .map(Number)
-        .filter(Boolean);
+      const repeatedSprings = springsString;
+      const sizes = sizesString.split(",").map(Number);
       return {
-        springs: [...repeatedSprings.substring(0, repeatedSprings.length - 1)],
+        springs: repeatedSprings,
         sizes,
       };
     });
@@ -128,14 +131,14 @@ const canBeValidPossibility = (possibility, expectedSizes, startIndex) => {
 const computePossibilitiesIterative = (springs, sizes) => {
   let possibilities = [springs];
   for (let startIndex = 0; startIndex < springs.length; startIndex++) {
-    console.log(possibilities.length);
+    // console.log(
+    //   `${startIndex} / ${springs.length - 1}: ${possibilities.length}`
+    // );
     const newPossibilities = [];
     for (const possibility of possibilities) {
       if (possibility[startIndex] === "?") {
-        const option1 = [...possibility];
-        option1[startIndex] = ".";
-        const option2 = [...possibility];
-        option2[startIndex] = "#";
+        const option1 = replaceAt(possibility, startIndex, ".");
+        const option2 = replaceAt(possibility, startIndex, "#");
         newPossibilities.push(option1, option2);
       } else {
         newPossibilities.push(possibility);
@@ -150,25 +153,69 @@ const computePossibilitiesIterative = (springs, sizes) => {
   );
 };
 
-const input = await parseTextInput(false);
-
-// console.log(input[5].springs.join(""));
+// const input = await parseTextInput(false);
 
 // let result = 0;
 // let index = 1;
 // for (const { springs, sizes } of input) {
 //   console.time(`time for ${index}`);
-//   const possibilities = computePossibilitiesIterative(springs, sizes);
-//   console.log(`${index}: ${possibilities.length} possibilities`);
+
+//   const simpleCount = computePossibilitiesIterative(springs, sizes).length;
+//   const duplicatedSpring = springs.concat("?", springs);
+//   const duplicatedSizes = sizes.concat(sizes);
+//   const doubledCount = computePossibilitiesIterative(
+//     duplicatedSpring,
+//     duplicatedSizes
+//   ).length;
+
+//   const ratio = doubledCount / simpleCount;
+//   if (Math.round(ratio) !== ratio) {
+//     throw new Error("ratio is not an int");
+//   }
+//   const fullCount = doubledCount * Math.pow(ratio, 3);
+
+//   // const repeatedSpringsRaw = springs.concat("?").repeat(5);
+//   // const repeatedSprings = repeatedSpringsRaw.substring(
+//   //   0,
+//   //   repeatedSpringsRaw.length - 1
+//   // );
+//   // const repeatedSizes = sizes.concat(sizes, sizes, sizes, sizes);
+
+//   // const possibilities = computePossibilitiesIterative(
+//   //   repeatedSprings,
+//   //   repeatedSizes
+//   // );
+//   console.log("\n\n");
+//   // console.log(`${index}: ${possibilities.length} possibilities`);
+//   console.log(`${index}: ${fullCount} possibilities`);
 //   console.timeEnd(`time for ${index}`);
-//   result += possibilities.length;
+//   console.log("\n\n");
+
+//   // result += possibilities.length;
+//   result += fullCount;
 //   index += 1;
 // }
 // console.log(result);
 
-const springs =
-  "???##????????#??????##????????#??????##????????#??????##????????#??????##????????#??";
-const sizes = [7, 4, 7, 4, 7, 4, 7, 4, 7, 4];
+// ???##????????#?? 7,4
+const springs = "???##????????#??";
+const sizes = [7, 4];
 
-const possibilities = computePossibilitiesIterative([...springs], sizes);
+const possibilities = computePossibilitiesIterative(springs, sizes);
+
 console.log(possibilities.length);
+
+// test:
+// input5: 11 - 183 - 3045 - 50667 - 843069
+
+// results as I duplicate:
+// input3: 1 - 2 - 6 - 20 - 68
+// input5: 11 - 183 - 3045 - 50667 - 843069
+
+// Found real answers for real input:
+
+// 1: 2592 possibilities
+// 2: 1024 possibilities
+// 3: 68 possibilities
+// 4: 768 possibilities
+// 5: 843069 possibilities
