@@ -145,17 +145,35 @@ const computeLoad = (grid) => {
   return load;
 };
 
-const applyCycles = (input) => {
-  for (let cycleIndex = 1; cycleIndex < 2; cycleIndex++) {
-    const northGrid = moveRocksNorth(input);
-    const westGrid = moveRocksWest(northGrid);
-    const southGrid = moveRocksSouth(westGrid);
-    const eastGrid = moveRocksEast(southGrid);
+const findLoadAfterNCycles = (n) => {
+  const patternTestInput = [69, 69, 65, 64, 65, 63, 68];
+  const testPatternStart = 3;
+  const patternRealInput = [
+    104988, 104983, 104987, 105008, 105060, 105112, 105154, 105197, 105255,
+    105312, 105351, 105354, 105358, 105362, 105322, 105299, 105283, 105265,
+    105225, 105191, 105162, 105133, 105097, 105078, 105037, 105000,
+  ];
+  const realPatternStart = 139;
 
-    prettyPrint(eastGrid);
+  if (n < realPatternStart) {
+    return "too soon";
+  }
+  return patternRealInput[(n - realPatternStart) % patternRealInput.length];
+};
+
+const applyCycles = (input) => {
+  let grid = input;
+  for (let cycleIndex = 1; cycleIndex < 1000; cycleIndex++) {
+    grid = moveRocksNorth(grid);
+    grid = moveRocksWest(grid);
+    grid = moveRocksSouth(grid);
+    grid = moveRocksEast(grid);
+    const load = computeLoad(grid);
+    console.log(`${cycleIndex}: load = ${load}`);
   }
 };
 
-const input = await parseTextInput(true);
-
-applyCycles(input);
+const input = await parseTextInput(false);
+const result = findLoadAfterNCycles(1000000000);
+console.log(result);
+// applyCycles(input);
