@@ -40,6 +40,7 @@ const findReflectionInPattern = (pattern) => {
   const HEIGHT = pattern.length;
   const WIDTH = pattern[0].length;
 
+  const foundReflections = [];
   // horizontal check
   for (let y = 0; y < HEIGHT - 1; y++) {
     const areMatchingLines = areMatchingHorizontalLines(pattern, y, y + 1);
@@ -62,7 +63,7 @@ const findReflectionInPattern = (pattern) => {
       }
 
       if (isVerifiedReflection) {
-        return { direction: "horizontal", coordinates: [y, y + 1] };
+        foundReflections.push({ direction: "horizontal", lowerCoordinate: y });
       }
     }
   }
@@ -85,23 +86,58 @@ const findReflectionInPattern = (pattern) => {
       }
 
       if (isVerifiedReflection) {
-        return { direction: "vertical", coordinates: [x, x + 1] };
+        foundReflections.push({ direction: "vertical", lowerCoordinate: x });
       }
     }
   }
 
-  console.log("No reflection found");
+  return foundReflections;
+};
+
+const findReflectionWithSmudge = (pattern, originalReflection) => {
+  const HEIGHT = pattern.length;
+  const WIDTH = pattern[0].length;
+
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      const originalCell = pattern[y][x];
+      const changedCell = originalCell === "." ? "#" : ".";
+      pattern[y][x] = changedCell;
+      const reflections = findReflectionInPattern(pattern);
+      pattern[y][x] = originalCell;
+      if (reflections.length !== 0) {
+        const reflection = reflections.find((foundReflection) => {
+          return (
+            foundReflection.direction !== originalReflection.direction ||
+            foundReflection.lowerCoordinate !==
+              originalReflection.lowerCoordinate
+          );
+        });
+        if (reflection) {
+          return reflection;
+        }
+      }
+    }
+  }
+  console.log("No reflection with smudge found");
 };
 
 const patterns = await parseTextInput(false);
 
 let result = 0;
+let patternIndex = 1;
 for (const pattern of patterns) {
-  const reflection = findReflectionInPattern(pattern);
+  console.log(`\n\nPattern ${patternIndex} / ${patterns.length}`);
+  const originalReflection = findReflectionInPattern(pattern)[0];
+  console.log("Original reflection : ", originalReflection);
+  const reflection = findReflectionWithSmudge(pattern, originalReflection);
+
   if (reflection.direction === "vertical") {
-    result += reflection.coordinates[0] + 1;
+    result += reflection.lowerCoordinate + 1;
   } else if (reflection.direction === "horizontal") {
-    result += (reflection.coordinates[0] + 1) * 100;
+    result += (reflection.lowerCoordinate + 1) * 100;
   }
+
+  patternIndex += 1;
 }
 console.log("Result : ", result);
