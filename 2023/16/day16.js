@@ -36,11 +36,6 @@ const mirrorDirectionChange = {
 };
 
 const moveBeam = (WIDTH, HEIGHT, pos, direction, ttl) => {
-  if (ttl <= 0) {
-    console.log("discarding some 2");
-
-    return [];
-  }
   const [x, y] = pos;
   const [dx, dy] = deltasPerDirection[direction];
   if (x + dx < 0 || x + dx >= WIDTH || y + dy < 0 || y + dy >= HEIGHT) {
@@ -51,7 +46,6 @@ const moveBeam = (WIDTH, HEIGHT, pos, direction, ttl) => {
 
 const getNewBeams = (grid, { pos, direction, ttl }) => {
   if (ttl <= 0) {
-    console.log("discarding some");
     return [];
   }
 
@@ -89,23 +83,19 @@ const getNewBeams = (grid, { pos, direction, ttl }) => {
   throw new Error("condition not covered");
 };
 
-const computeEnergizedGrid = (grid) => {
+const computeEnergizedGrid = (grid, entranceBeam, MAX_TTL) => {
   const HEIGHT = grid.length;
   const WIDTH = grid[0].length;
-  const MAX_TTL = 100;
 
   const energizedGrid = Array.from({ length: HEIGHT }, () =>
     Array.from({ length: WIDTH }, () => ".")
   );
 
   let energizedCount = 0;
-  const beams = [{ pos: [0, 0], direction: "RIGHT", ttl: MAX_TTL }];
+  const beams = [entranceBeam];
   let index = 0;
   while (beams.length > 0) {
     index += 1;
-    if (index % 100 === 0) {
-      console.log(`${index}: ${beams.length} beams`);
-    }
     if (index > 20000000) {
       console.log("REACHED MAX NUMBER OF STEPS, STOPPING");
       break;
@@ -118,7 +108,6 @@ const computeEnergizedGrid = (grid) => {
       beam.ttl = MAX_TTL;
       energizedGrid[y][x] = "#";
       energizedCount += 1;
-      console.log(index, ": Increasing count : ", energizedCount);
     }
 
     beams.push(...getNewBeams(grid, beam));
@@ -126,11 +115,62 @@ const computeEnergizedGrid = (grid) => {
   return [energizedGrid, energizedCount];
 };
 
+const computeMaxEnergizedCount = (grid) => {
+  const HEIGHT = grid.length;
+  const WIDTH = grid[0].length;
+  const MAX_TTL = 100;
+
+  const topEntranceBeams = Array.from({ length: WIDTH }, (_, x) => ({
+    pos: [x, 0],
+    direction: "BOTTOM",
+    ttl: MAX_TTL,
+  }));
+  const bottomEntranceBeams = Array.from({ length: WIDTH }, (_, x) => ({
+    pos: [x, HEIGHT - 1],
+    direction: "TOP",
+    ttl: MAX_TTL,
+  }));
+  const leftEntranceBeams = Array.from({ length: HEIGHT }, (_, y) => ({
+    pos: [0, y],
+    direction: "RIGHT",
+    ttl: MAX_TTL,
+  }));
+  const rightEntranceBeams = Array.from({ length: HEIGHT }, (_, y) => ({
+    pos: [WIDTH - 1, y],
+    direction: "LEFT",
+    ttl: MAX_TTL,
+  }));
+
+  const entranceBeams = [
+    ...topEntranceBeams,
+    ...bottomEntranceBeams,
+    ...leftEntranceBeams,
+    ...rightEntranceBeams,
+  ];
+
+  let maxEnergizedCount = 0;
+  for (const entranceBeam of entranceBeams) {
+    const [_, energizedCount] = computeEnergizedGrid(
+      grid,
+      entranceBeam,
+      MAX_TTL
+    );
+    if (energizedCount > maxEnergizedCount) {
+      maxEnergizedCount = energizedCount;
+    }
+  }
+  return maxEnergizedCount;
+};
+
 const input = await parseTextInput(false);
 
-const [energizedGrid, energizedCount] = computeEnergizedGrid(input);
+const [_, part1Result] = computeEnergizedGrid(
+  input,
+  { pos: [0, 0], direction: "RIGHT", ttl: 100 },
+  100
+);
 
-prettyPrint(energizedGrid);
-console.log(energizedCount);
+console.log(part1Result);
 
-// 469 is too low
+const part2Result = computeMaxEnergizedCount(input);
+console.log(part2Result);
