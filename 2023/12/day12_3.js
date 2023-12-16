@@ -75,6 +75,9 @@ const mergeGroups = (groups) =>
     }
   }, []);
 
+const rebuildString = (groups) =>
+  groups.reduce((previous, [char, count]) => previous + char.repeat(count), "");
+
 const replaceByBrokenChars = (groups, replaceZoneStart, size) => {
   const newGroups = [];
   let groupIndexStart = 0;
@@ -134,36 +137,24 @@ const replaceByBrokenChars = (groups, replaceZoneStart, size) => {
 
     throw new Error("replace did not fit any of the cases");
   }
-  // Place dots before the replaceZoneStart
   const mergedGroups = mergeGroups(newGroups);
-  let index = 0;
-  for (const group of mergedGroups) {
-    if (index < replaceZoneStart && group[0] === "?") {
-      group[0] = ".";
+
+  const rebuiltString = rebuildString(mergedGroups);
+  let newString = "";
+  for (let i = 0; i < rebuiltString.length; i++) {
+    const char = rebuiltString[i];
+    if (i < replaceZoneStart && char === "?") {
+      newString += ".";
+    } else if (i === replaceZoneStart + size) {
+      newString += ".";
+    } else {
+      newString += char;
     }
-    index += group[1];
   }
-  return mergedGroups;
+  return splitInGroups(newString);
 };
 
-const rebuildString = (groups) =>
-  groups.reduce((previous, [char, count]) => previous + char.repeat(count), "");
-
 const computeChildren = (groups, sizes, startIndex) => {
-  // let firstKnownBrokenGroupSize;
-  // for (const [char, count] of groups) {
-  //   if (char === "?") {
-  //     break;
-  //   }
-  //   if (char === "#") {
-  //     firstKnownBrokenGroupSize = count;
-  //     break;
-  //   }
-  // }
-  // if (firstKnownBrokenGroupSize && firstKnownBrokenGroupSize === sizes[0]) {
-  //   return [{ groups, sizes: sizes.slice(1) }];
-  // }
-
   const fullBrokenGroup = replaceUnknownByChar(groups, "#");
   const children = [];
   let index = 0;
@@ -184,7 +175,6 @@ const computeChildren = (groups, sizes, startIndex) => {
         rebuiltString[replaceZoneStart - 1] !== "#" &&
         rebuiltString[replaceZoneStart + sizes[0]] !== "#"
       ) {
-        // console.log("Replacing at : ", replaceZoneStart, sizes[0]);
         children.push({
           groups: replaceByBrokenChars(groups, replaceZoneStart, sizes[0]),
           sizes: sizes.slice(1),
@@ -195,22 +185,37 @@ const computeChildren = (groups, sizes, startIndex) => {
 
     index += count;
   }
-  // const result = children.map((newGroups) => ({
-  //   groups: newGroups,
-  //   sizes: sizes.slice(1),
-  // }));
   return children;
 };
 
 const getCacheKey = (groups, sizes, startIndex) =>
-  // TODO: size of space groups should not matter?
   groups
     .map((group) => (group[0] === "." ? [".", 1] : group).join(""))
-    // .map((group) => group.join(""))
     .join("")
     .concat("|")
     .concat(sizes.join(","))
     .concat(`|${startIndex}`);
+
+const isInvalid = (groups, sizes, startIndex) => {
+  const fullBrokenGroup = replaceUnknownByChar(groups, "#");
+  let isInvalid = false;
+  let groupStartIndex = 0;
+  let i = 0;
+  for (const [char, count] of fullBrokenGroup) {
+    if (groupStartIndex + count >= startIndex) {
+      return false;
+    }
+
+    if (char === "#") {
+      if (count !== sizes[i]) {
+        return true;
+      }
+      i += 1;
+    }
+    groupStartIndex += count;
+  }
+  return isInvalid;
+};
 
 const computeNumberOfPossibilities = (springsString, expectedSizes) => {
   const stack = [
@@ -228,36 +233,14 @@ const computeNumberOfPossibilities = (springsString, expectedSizes) => {
 
     const cacheKey = getCacheKey(groups, sizes, startIndex);
     if (cache[cacheKey] !== undefined) {
-      // console.log("Value in cache already");
       result += cache[cacheKey];
       continue;
     }
 
-    // const hasUnknown = groups.filter(([char]) => char === "?").length > 0;
-    // if (!hasUnknown) {
-    //   const toAdd = isValidPossibility(groups, expectedSizes) ? 1 : 0;
-    //   result += toAdd;
-    //   cache[cacheKey] = toAdd;
-    //   if (toAdd === 1) {
-    //     console.log({ groups: rebuildString(groups), sizes });
-    //   }
-    //   continue;
-    // }
-
-    // if (sizes.length === 0) {
-    //   const toAdd = isValidPossibility(
-    //     replaceUnknownByChar(groups, "."),
-    //     expectedSizes
-    //   )
-    //     ? 1
-    //     : 0;
-    //   result += toAdd;
-    //   cache[cacheKey] = toAdd;
-    //   // if (toAdd === 1) {
-    //   //   console.log({ groups: rebuildString(groups), sizes });
-    //   // }
-    //   continue;
-    // }
+    if (isInvalid(groups, expectedSizes, startIndex)) {
+      cache[cacheKey] = 0;
+      continue;
+    }
 
     const children = computeChildren(groups, sizes, startIndex);
 
@@ -270,13 +253,9 @@ const computeNumberOfPossibilities = (springsString, expectedSizes) => {
         : 0;
       result += toAdd;
       cache[cacheKey] = toAdd;
-      // if (toAdd === 1) {
-      //   console.log({ groups: rebuildString(groups), sizes });
-      // }
       continue;
     }
 
-    // stack.push(...children);
     const areAllChildrenInCache = children.every((child) => {
       return (
         cache[getCacheKey(child.groups, child.sizes, child.startIndex)] !==
@@ -290,34 +269,21 @@ const computeNumberOfPossibilities = (springsString, expectedSizes) => {
           cache[getCacheKey(child.groups, child.sizes, child.startIndex)]
         );
       }, 0);
-      // if (childrenSum > 1) {
-      //   console.log("Using cache with sum : ", childrenSum);
-      // }
-
       result += childrenSum;
       cache[cacheKey] = childrenSum;
     } else {
       stack.push(...children);
     }
-
-    // stop if solution is false
-    // if sizes has length 1, we can compute number of possibilities
-    // if first of sizes corresponds to first group, move on to next
-    // compute children and add them to the stack
   }
-  // console.log(cache);
   return result;
 };
 
-const input = await parseTextInput(true);
+const input = await parseTextInput(false);
 
 let inputIndex = 0;
 let result = 0;
 for (const { springsString, sizes } of input) {
   inputIndex += 1;
-
-  // const repeatedSprings = springsString;
-  // const repeatedSizes = sizes;
 
   const repeatedSpringsRaw = springsString.concat("?").repeat(5);
   const repeatedSprings = repeatedSpringsRaw.substring(
@@ -335,49 +301,3 @@ for (const { springsString, sizes } of input) {
 }
 
 console.log("Result : ", result);
-
-// const testInput2 = {
-//   springsString: "####.#...#...",
-//   sizes: [4, 1, 1],
-//   startIndex: 4,
-// };
-
-// const groups = splitInGroups(testInput2.springsString);
-// console.log(groups);
-
-// const test = computeChildren(groups, testInput2.sizes, testInput2.startIndex);
-// console.dir(
-//   test.map(({ groups, ...others }) => ({
-//     groups: rebuildString(groups),
-//     ...others,
-//   })),
-//   { depth: null }
-// );
-
-// const result = computeNumberOfPossibilities(
-//   testInput2.springsString,
-//   testInput2.sizes
-// );
-// console.log("Result : ", result);
-
-// Input 1: 2592 possibilities found
-// Input 2: 1024 possibilities found
-// Input 3: 68 possibilities found
-// Input 4: 768 possibilities found
-// Input 5: 843069 possibilities found
-// Input 6: 7811529 possibilities found
-// Input 7: 248832 possibilities found
-// Input 8: 14176 possibilities found
-// Input 9: 5184 possibilities found
-// Input 10: 38810 possibilities found
-// Input 11: 6035364 possibilities found
-// Input 12: 16384 possibilities found
-// Input 13: 1 possibilities found
-// Input 14: 25001551 possibilities found
-// Input 15: 724490 possibilities found
-// Input 16: 608477 possibilities found
-// Input 17: 305648 possibilities found
-// Input 18: 243 possibilities found
-// Input 19: 528 possibilities found
-// Input 20: 226001 possibilities found
-// Input 21: 2500 possibilities found
