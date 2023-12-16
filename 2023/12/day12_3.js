@@ -168,13 +168,9 @@ const computeChildren = (groups, sizes) => {
   const fullBrokenGroup = replaceUnknownByChar(groups, "#");
   const children = [];
   let index = 0;
+  const rebuiltString = rebuildString(groups);
   for (const [char, count] of fullBrokenGroup) {
-    if (
-      char === "." ||
-      (char === "#" && count < sizes[0]) ||
-      rebuildString(groups).substring(index, index + count) ===
-        "#".repeat(count)
-    ) {
+    if (char === "." || (char === "#" && count < sizes[0])) {
       index += count;
       continue;
     }
@@ -184,7 +180,13 @@ const computeChildren = (groups, sizes) => {
       startIndex <= index + count - sizes[0];
       startIndex++
     ) {
-      children.push(replaceByBrokenChars(groups, startIndex, sizes[0]));
+      if (
+        rebuiltString[startIndex - 1] !== "#" &&
+        rebuiltString[startIndex + sizes[0]] !== "#"
+      ) {
+        console.log("Replacing at : ", startIndex, sizes[0]);
+        children.push(replaceByBrokenChars(groups, startIndex, sizes[0]));
+      }
     }
 
     index += count;
@@ -221,9 +223,9 @@ const computeNumberOfPossibilities = (springsString, expectedSizes) => {
     //   const toAdd = isValidPossibility(groups, expectedSizes) ? 1 : 0;
     //   result += toAdd;
     //   cache[cacheKey] = toAdd;
-    //   // if (toAdd === 1) {
-    //   //   console.log({ groups: rebuildString(groups), sizes });
-    //   // }
+    //   if (toAdd === 1) {
+    //     console.log({ groups: rebuildString(groups), sizes });
+    //   }
     //   continue;
     // }
 
@@ -253,9 +255,9 @@ const computeNumberOfPossibilities = (springsString, expectedSizes) => {
         : 0;
       result += toAdd;
       cache[cacheKey] = toAdd;
-      if (toAdd === 1) {
-        console.log({ groups: rebuildString(groups), sizes });
-      }
+      // if (toAdd === 1) {
+      //   console.log({ groups: rebuildString(groups), sizes });
+      // }
       continue;
     }
 
@@ -275,6 +277,7 @@ const input = await parseTextInput(true);
 // let result = 0;
 // for (const { springsString, sizes } of input) {
 //   inputIndex += 1;
+//   // console.log(springsString, sizes);
 //   const possibilitiesCount = computeNumberOfPossibilities(springsString, sizes);
 //   console.log(`Input ${inputIndex}: ${possibilitiesCount} possibilities found`);
 //   result += possibilitiesCount;
@@ -283,8 +286,8 @@ const input = await parseTextInput(true);
 // console.log("Result : ", result);
 
 const testInput2 = {
-  springsString: "?#?#?#?#?#?#?#?",
-  sizes: [1, 3, 1, 6],
+  springsString: "####.#...#...",
+  sizes: [1],
 };
 const groups = splitInGroups(testInput2.springsString);
 console.log(groups);
@@ -300,3 +303,5 @@ console.dir(
 //   testInput2.sizes
 // );
 // console.log("Result : ", result);
+
+// Input[996]: expected 4

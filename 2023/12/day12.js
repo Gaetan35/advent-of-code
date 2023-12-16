@@ -58,8 +58,12 @@ const computePossibilities = (possibilities, startIndex, sizes) => {
 const input = await parseTextInput(false);
 
 let result = 0;
+let inputIndex = 0;
 for (const { springs, sizes } of input) {
-  result += computePossibilities([springs], 0, sizes).length;
+  inputIndex += 1;
+  const possibilitiesCount = computePossibilities([springs], 0, sizes).length;
+  console.log(`Input ${inputIndex}: ${possibilitiesCount} possibilities found`);
+  result += possibilitiesCount;
 }
 console.log(result);
 
