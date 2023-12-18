@@ -47,7 +47,8 @@ const computeNeighbors = (grid, [x, y], lastDirections, heatLoss) => {
     lastDirections[0] === lastDirections[1] &&
     lastDirections[1] === lastDirections[2]
   ) {
-    deltas = deltas.filter(([direction]) => direction !== lastDirections[0]);
+    // TODO: change object above to remove that filter
+    deltas = deltas.filter(([direction]) => direction !== lastDirections[2]);
   }
   const neighbors = [];
   for (const [direction, dx, dy] of deltas) {
@@ -79,7 +80,7 @@ const findMinHeatLoss = (grid, minHeatLossRemainingGrid) => {
   const cache = {};
 
   // 965 is best path found yet
-  let minHeatLoss = 966;
+  let minHeatLoss = 1000;
   console.log("Starting with minHeatLoss: ", minHeatLoss);
   const nodes = [
     {
@@ -109,7 +110,7 @@ const findMinHeatLoss = (grid, minHeatLossRemainingGrid) => {
 
     if (x === WIDTH - 1 && y === HEIGHT - 1) {
       if (minHeatLoss === null || heatLoss < minHeatLoss) {
-        // console.log("\nFound new min value: ", heatLoss, "\n");
+        console.log("\nFound new min value: ", heatLoss, "\n");
         minHeatLoss = heatLoss;
       }
       continue;
@@ -133,6 +134,7 @@ const computeMinHeatLossRemainingGrid = (grid) => {
     Array.from({ length: WIDTH }, () => (HEIGHT + WIDTH) * 1000)
   );
 
+  // TODO: going back should not be allowed maybe
   const deltas = [
     [-1, 0],
     [0, -1],
@@ -144,7 +146,7 @@ const computeMinHeatLossRemainingGrid = (grid) => {
   let i = 0;
   while (nodes.length > 0) {
     i += 1;
-    if (i % 100000000 === 0) {
+    if (i % 10000000 === 0) {
       console.log(`${i}: ${nodes.length} nodes`);
     }
     const {
@@ -152,7 +154,7 @@ const computeMinHeatLossRemainingGrid = (grid) => {
       heatLoss,
     } = nodes.pop();
 
-    if (heatLoss > minHeatLossRemainingGrid[y][x]) {
+    if (heatLoss >= minHeatLossRemainingGrid[y][x]) {
       continue;
     }
 
@@ -173,17 +175,20 @@ const computeMinHeatLossRemainingGrid = (grid) => {
 };
 
 const input = await parseTextInput(false);
-console.log("Computing grid ...");
-const minHeatLossRemainingGrid = computeMinHeatLossRemainingGrid(input);
+// console.log("Computing grid ...");
+// const minHeatLossRemainingGrid = computeMinHeatLossRemainingGrid(input);
 
-writeFileSync("grid.json", JSON.stringify(minHeatLossRemainingGrid));
+// writeFileSync("grid.json", JSON.stringify(minHeatLossRemainingGrid));
 
 // prettyPrint(minHeatLossRemainingGrid);
+const minHeatLossRemainingGrid = JSON.parse(
+  (await fs.readFile("gridReal.json")).toString()
+);
 
-// console.time();
-// const minHeatLoss = findMinHeatLoss(input, minHeatLossRemainingGrid);
-// console.timeEnd();
-// console.log("Min heat loss: ", minHeatLoss);
+console.time();
+const minHeatLoss = findMinHeatLoss(input, minHeatLossRemainingGrid);
+console.timeEnd();
+console.log("Min heat loss: ", minHeatLoss);
 
 // 968 is too high
 // 965 is too high
