@@ -7,12 +7,6 @@ const numberToDirection = {
   3: "U",
 };
 
-const rotateDirection = {
-  R: "D",
-  D: "L",
-  L: "U",
-  U: "R",
-};
 const parseTextInput = async (isTest = false) => {
   const input = (await fs.readFile(isTest ? "input_test.txt" : "input.txt"))
     .toString()
@@ -20,16 +14,16 @@ const parseTextInput = async (isTest = false) => {
     .map((line) => {
       const [direction, length, colorRaw] = line.split(" ");
       const color = colorRaw.substring(2, colorRaw.length - 1);
-      // return {
-      //   direction: numberToDirection[color.at(-1)],
-      //   length: parseInt(color.substring(0, 5), 16),
-      //   color,
-      // };
       return {
-        direction: rotateDirection[direction],
-        length: Number(length),
+        direction: numberToDirection[color.at(-1)],
+        length: parseInt(color.substring(0, 5), 16),
         color,
       };
+      // return {
+      //   direction: direction,
+      //   length: Number(length),
+      //   color,
+      // };
     });
 
   return input;
@@ -46,7 +40,7 @@ const computeLines = (input) => {
   const pos = [0, 0];
   const verticalLines = [];
   const horizontalLines = [];
-
+  let i = 0;
   for (const { direction, length } of input) {
     const [dx, dy] = DELTAS_PER_DIRECTION[direction];
     if (direction === "U" || direction === "D") {
@@ -64,10 +58,13 @@ const computeLines = (input) => {
         y: pos[1],
         xMin: Math.min(x1, x2),
         xMax: Math.max(x1, x2),
+        isChange:
+          input.at(i - 1).direction === input[(i + 1) % input.length].direction,
       });
     }
     pos[0] += dx * length;
     pos[1] += dy * length;
+    i += 1;
   }
 
   verticalLines.sort((line1, line2) => {
@@ -88,7 +85,6 @@ const computeLines = (input) => {
 };
 
 const splitVerticalLines = (verticalLines) => {
-  // TODO: split is not correct, verticalLines are not correctly split
   const splitLines = [];
 
   const splits = [
@@ -143,79 +139,71 @@ const sortSplittedLines = (splittedVerticalLines) => {
 
 const computeArea = (linesPerCoordinates, horizontalLines) => {
   const horizontalLinesPerCoordinates = {};
-  for (const { xMin, xMax, y } of horizontalLines) {
-    horizontalLinesPerCoordinates[`${xMin}|${xMax}|${y}`] = true;
+  for (const { xMin, xMax, y, isChange } of horizontalLines) {
+    horizontalLinesPerCoordinates[`${xMin}|${xMax}|${y}`] = isChange;
   }
 
-  // console.log(horizontalLinesPerCoordinates);
-
   let area = 0;
-  for (const [key, lines] of Object.entries(linesPerCoordinates).slice(1, 2)) {
-    let shouldAdd = true;
-    console.log(lines);
+  for (const [key, lines] of Object.entries(linesPerCoordinates)) {
+    let state = "outside";
+    let nextState = null;
     for (let i = 0; i < lines.length - 1; i++) {
-      let areaBeforeRound = area;
       const { yMin: yMin1, yMax: yMax1, x: x1 } = lines[i];
-      const { yMin: yMin2, yMax: yMax2, x: x2 } = lines[i + 1];
+      const { x: x2 } = lines[i + 1];
 
-      if (yMin1 !== yMax1 && shouldAdd) {
+      const isOnHorizontalLine =
+        yMin1 === yMax1 &&
+        horizontalLinesPerCoordinates[`${x1}|${x2}|${yMin1}`] !== undefined;
+
+      if (!isOnHorizontalLine) {
+        state =
+          nextState !== null
+            ? nextState
+            : state === "outside"
+            ? "inside"
+            : "outside";
+        nextState = null;
+      } else {
+        const isChange = horizontalLinesPerCoordinates[`${x1}|${x2}|${yMin1}`];
+        nextState = isChange
+          ? state === "inside"
+            ? "outside"
+            : "inside"
+          : state;
+        state = "inside";
+      }
+
+      if (yMin1 !== yMax1 && state === "inside") {
         area += (yMax1 - yMin1 + 1) * (x2 - x1 + 1);
-        shouldAdd = !shouldAdd;
-        continue;
       }
 
       if (yMin1 === yMax1) {
-        const isOnHorizontalLine =
-          !!horizontalLinesPerCoordinates[`${x1}|${x2}|${yMin1}`];
-        console.log(
-          `i=${i}: shouldAdd = ${shouldAdd}, isOnHorizontalLine = ${isOnHorizontalLine}`
-        );
-
-        if (shouldAdd || isOnHorizontalLine) {
+        if (state === "inside") {
           area += x2 - x1 + 1;
           if (isOnHorizontalLine) {
-            if (i >= 1) {
-              area -= 1;
+            const isChange =
+              horizontalLinesPerCoordinates[`${x1}|${x2}|${yMin1}`];
+            if (!isChange && nextState === "inside") {
+              area -= 2;
             }
-            if (i <= lines.length - 1) {
+            if (isChange) {
               area -= 1;
             }
           }
         }
-        if (!isOnHorizontalLine) {
-          shouldAdd = !shouldAdd;
-        }
       }
-      console.log(key, i, " Added this round: ", area - areaBeforeRound);
     }
   }
   return area;
 };
 
-const input = await parseTextInput(true);
-// console.log(input);
+const input = await parseTextInput(false);
 
 const [verticalLines, horizontalLines] = computeLines(input);
-// console.log(verticalLines);
 
 const splittedVerticalLines = splitVerticalLines(verticalLines);
-// console.log(splittedVerticalLines);
 
 const linesPerCoordinates = sortSplittedLines(splittedVerticalLines);
 
-// console.log(horizontalLines);
-console.dir(linesPerCoordinates, { depth: null });
 const area = computeArea(linesPerCoordinates, horizontalLines);
 console.log("Area: ", area);
-
-/*
-
-..###..###
-###.#..#I#
-#...####.#
-#........#
-#.###....#
-#.#.#....#
-###.######
-
-*/
