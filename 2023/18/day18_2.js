@@ -6,6 +6,13 @@ const numberToDirection = {
   2: "L",
   3: "U",
 };
+
+const rotateDirection = {
+  R: "D",
+  D: "L",
+  L: "U",
+  U: "R",
+};
 const parseTextInput = async (isTest = false) => {
   const input = (await fs.readFile(isTest ? "input_test.txt" : "input.txt"))
     .toString()
@@ -19,7 +26,7 @@ const parseTextInput = async (isTest = false) => {
       //   color,
       // };
       return {
-        direction,
+        direction: rotateDirection[direction],
         length: Number(length),
         color,
       };
@@ -36,7 +43,7 @@ const DELTAS_PER_DIRECTION = {
 };
 
 const computeLines = (input) => {
-  const pos = [300, 300];
+  const pos = [0, 0];
   const verticalLines = [];
   const horizontalLines = [];
 
@@ -92,15 +99,16 @@ const splitVerticalLines = (verticalLines) => {
     const yCoordinates = [yMin];
     for (let i = 0; i < splits.length; i++) {
       const split = splits[i];
-      if (split < yMin || split > yMax) {
+      const currentMin = yCoordinates.at(-1);
+      if (split < currentMin || split > yMax) {
         continue;
       }
-      if (split === yMin && split === yMax) {
+      if (split === currentMin && split === yMax) {
         continue;
       }
 
-      if (split === yMin) {
-        yCoordinates.push(yMin, yMin + 1);
+      if (split === currentMin) {
+        yCoordinates.push(currentMin, currentMin + 1);
         continue;
       }
 
@@ -109,7 +117,7 @@ const splitVerticalLines = (verticalLines) => {
         continue;
       }
 
-      // yMin < split < yMax
+      // currentMin < split < yMax
       yCoordinates.push(split - 1, split, split, split + 1);
     }
     yCoordinates.push(yMax);
@@ -135,17 +143,21 @@ const sortSplittedLines = (splittedVerticalLines) => {
 
 const computeArea = (linesPerCoordinates, horizontalLines) => {
   const horizontalLinesPerCoordinates = {};
-  for (const { xMin, xMax } of horizontalLines) {
-    horizontalLinesPerCoordinates[`${xMin}|${xMax}`] = true;
+  for (const { xMin, xMax, y } of horizontalLines) {
+    horizontalLinesPerCoordinates[`${xMin}|${xMax}|${y}`] = true;
   }
 
+  // console.log(horizontalLinesPerCoordinates);
+
   let area = 0;
-  for (const [key, lines] of Object.entries(linesPerCoordinates)) {
-    // console.log(key);
+  for (const [key, lines] of Object.entries(linesPerCoordinates).slice(1, 2)) {
     let shouldAdd = true;
+    console.log(lines);
     for (let i = 0; i < lines.length - 1; i++) {
+      let areaBeforeRound = area;
       const { yMin: yMin1, yMax: yMax1, x: x1 } = lines[i];
       const { yMin: yMin2, yMax: yMax2, x: x2 } = lines[i + 1];
+
       if (yMin1 !== yMax1 && shouldAdd) {
         area += (yMax1 - yMin1 + 1) * (x2 - x1 + 1);
         shouldAdd = !shouldAdd;
@@ -154,24 +166,33 @@ const computeArea = (linesPerCoordinates, horizontalLines) => {
 
       if (yMin1 === yMax1) {
         const isOnHorizontalLine =
-          !!horizontalLinesPerCoordinates[`${x1}|${x2}`];
+          !!horizontalLinesPerCoordinates[`${x1}|${x2}|${yMin1}`];
+        console.log(
+          `i=${i}: shouldAdd = ${shouldAdd}, isOnHorizontalLine = ${isOnHorizontalLine}`
+        );
 
         if (shouldAdd || isOnHorizontalLine) {
           area += x2 - x1 + 1;
-          if (isOnHorizontalLine && lines.length > 2) {
-            area -= 1;
-          }
-          if (!isOnHorizontalLine) {
-            shouldAdd = !shouldAdd;
+          if (isOnHorizontalLine) {
+            if (i >= 1) {
+              area -= 1;
+            }
+            if (i <= lines.length - 1) {
+              area -= 1;
+            }
           }
         }
+        if (!isOnHorizontalLine) {
+          shouldAdd = !shouldAdd;
+        }
       }
+      console.log(key, i, " Added this round: ", area - areaBeforeRound);
     }
   }
   return area;
 };
 
-const input = await parseTextInput(false);
+const input = await parseTextInput(true);
 // console.log(input);
 
 const [verticalLines, horizontalLines] = computeLines(input);
@@ -186,3 +207,15 @@ const linesPerCoordinates = sortSplittedLines(splittedVerticalLines);
 console.dir(linesPerCoordinates, { depth: null });
 const area = computeArea(linesPerCoordinates, horizontalLines);
 console.log("Area: ", area);
+
+/*
+
+..###..###
+###.#..#I#
+#...####.#
+#........#
+#.###....#
+#.#.#....#
+###.######
+
+*/

@@ -4,6 +4,13 @@ const prettyPrint = (grid) => {
   console.log(grid.map((line) => line.join("")).join("\n"));
 };
 
+const rotateDirection = {
+  R: "D",
+  D: "L",
+  L: "U",
+  U: "R",
+};
+
 const parseTextInput = async (isTest = false) => {
   const input = (await fs.readFile(isTest ? "input_test.txt" : "input.txt"))
     .toString()
@@ -11,7 +18,7 @@ const parseTextInput = async (isTest = false) => {
     .map((line) => {
       const [direction, length, color] = line.split(" ");
       return {
-        direction,
+        direction: rotateDirection[direction],
         length: Number(length),
         color: color.substring(1, color.length - 1),
       };
@@ -75,7 +82,7 @@ const computeTrenchGrid = (input) => {
 
   const [dx1, dy1] = DELTAS_PER_DIRECTION[input[0].direction];
   const [dx2, dy2] = DELTAS_PER_DIRECTION[input[1].direction];
-  const firstInsidePos = [lengthSum - dx1 - dx2, lengthSum - dy1 - dy2];
+  const firstInsidePos = [lengthSum + dx1 + dx2, lengthSum + dy1 + dy2];
   trenchGrid[firstInsidePos[1]][firstInsidePos[0]] = "I";
 
   const finalGrid = trenchGrid
@@ -106,12 +113,14 @@ const fillTrenchGrid = (grid, insidePos) => {
   return [grid, insideCount];
 };
 
-const input = await parseTextInput(false);
+const input = await parseTextInput(true);
 console.log(input);
 
 const [trenchGrid, insidePos] = computeTrenchGrid(input);
+prettyPrint(trenchGrid);
+
 const [filledGrid, insideCount] = fillTrenchGrid(trenchGrid, insidePos);
-prettyPrint(filledGrid);
+// prettyPrint(filledGrid);
 
 const lengthSum = input.reduce((previous, { length }) => previous + length, 0);
 
