@@ -27,7 +27,6 @@ const parseTextInput = async (isTest = false) => {
 };
 
 const { parts, workflows } = await parseTextInput(false);
-// console.dir(workflows, { depth: null });
 
 const acceptedParts = [];
 const rejectedParts = [];
