@@ -13,11 +13,11 @@ const parseTextInput = async (isTest = false) => {
     .map((line) => {
       const [direction, length, colorRaw] = line.split(" ");
       const color = colorRaw.substring(2, colorRaw.length - 1);
-      return {
-        direction: numberToDirection[color.at(-1)],
-        length: parseInt(color.substring(0, 5), 16),
-        color,
-      };
+      // return {
+      //   direction: numberToDirection[color.at(-1)],
+      //   length: parseInt(color.substring(0, 5), 16),
+      //   color,
+      // };
       return {
         direction,
         length: Number(length),
@@ -36,7 +36,7 @@ const DELTAS_PER_DIRECTION = {
 };
 
 const computeLines = (input) => {
-  const pos = [0, 0];
+  const pos = [300, 300];
   const verticalLines = [];
   const horizontalLines = [];
 
@@ -77,182 +77,47 @@ const computeLines = (input) => {
     return line1.xMin - line2.xMin;
   });
 
-  // TODO: ignore the extremities of vertical lines, and add the sum of horizontal lines
   return [verticalLines, horizontalLines];
 };
 
 const splitVerticalLines = (verticalLines) => {
-  let splittedLines = [...verticalLines];
-  let hasSplit = true;
-  let step = 0;
-  while (hasSplit) {
-    step += 1;
-    if (step % 1000 === 0) {
-      console.log("Length : ", splittedLines.length);
-      console.log(splittedLines.slice(0, 20));
+  // TODO: split is not correct, verticalLines are not correctly split
+  const splitLines = [];
+
+  const splits = [
+    ...new Set(verticalLines.flatMap(({ yMin, yMax }) => [yMin, yMax])),
+  ].sort((a, b) => a - b);
+
+  for (const { yMin, yMax, x } of verticalLines) {
+    const yCoordinates = [yMin];
+    for (let i = 0; i < splits.length; i++) {
+      const split = splits[i];
+      if (split < yMin || split > yMax) {
+        continue;
+      }
+      if (split === yMin && split === yMax) {
+        continue;
+      }
+
+      if (split === yMin) {
+        yCoordinates.push(yMin, yMin + 1);
+        continue;
+      }
+
+      if (split === yMax) {
+        yCoordinates.push(yMax - 1, yMax);
+        continue;
+      }
+
+      // yMin < split < yMax
+      yCoordinates.push(split - 1, split, split, split + 1);
     }
-    hasSplit = false;
-    for (let i = 0; i < splittedLines.length; i++) {
-      const { yMin, yMax, x } = splittedLines[i];
-      const newSplittedLines = [];
-      const currentLineSplits = [];
-      // console.log(`i = ${i}, `, { yMin, yMax, x });
-      for (const { yMin: yMin2, yMax: yMax2, x: x2 } of splittedLines) {
-        if (yMin === yMin2 && yMax === yMax2 && x === x2) {
-          continue;
-        }
-        if (yMax < yMin2 || yMin > yMax2) {
-          // No intersection
-          newSplittedLines.push({ yMin: yMin2, yMax: yMax2, x: x2 });
-          continue;
-        }
-        if (yMin === yMin2 && yMax === yMax2) {
-          newSplittedLines.push({ yMin: yMin2, yMax: yMax2, x: x2 });
-          continue;
-        }
-        hasSplit = true;
-
-        if (yMin === yMin2 && yMax < yMax2) {
-          if (yMin > yMax || yMax + 1 > yMax2) {
-            console.log("cas 10");
-          }
-          newSplittedLines.push(
-            { yMin, yMax, x: x2 },
-            { yMin: yMax + 1, yMax: yMax2, x: x2 }
-          );
-          continue;
-        }
-        if (yMin === yMin2 && yMax > yMax2) {
-          if (yMin > yMax2 || yMax2 + 1 > yMax) {
-            console.log("cas 9");
-          }
-          currentLineSplits.push(yMax2, yMax2 + 1);
-          newSplittedLines.push(
-            { yMin, yMax: yMax2, x: x2 },
-            { yMin: yMax2 + 1, yMax: yMax, x }
-          );
-          continue;
-        }
-
-        if (yMax === yMax2 && yMin > yMin2) {
-          if (yMin2 > yMin - 1 || yMin > yMax) {
-            console.log("cas 7");
-          }
-          newSplittedLines.push(
-            { yMin: yMin2, yMax: yMin - 1, x: x2 },
-            { yMin: yMin, yMax: yMax, x: x2 }
-          );
-          continue;
-        }
-        if (yMax === yMax2 && yMin < yMin2) {
-          if (yMin2 > yMax2) {
-            console.log("cas 6");
-          }
-          currentLineSplits.push(yMin2 - 1, yMin2);
-          newSplittedLines.push({ yMin: yMin2, yMax: yMax2, x: x2 });
-          continue;
-        }
-
-        if (yMin < yMin2 && yMax < yMax2) {
-          // overlaps beginning
-          if (yMin2 > yMax || yMax + 1 > yMax2) {
-            console.log("cas 4");
-          }
-          currentLineSplits.push(yMin2 - 1, yMin2);
-          newSplittedLines.push(
-            { yMin: yMin2, yMax, x: x2 },
-            { yMin: yMax + 1, yMax: yMax2, x: x2 }
-          );
-          continue;
-        }
-        if (yMin > yMin2 && yMax < yMax2) {
-          // included inside
-          if (yMin2 > yMin - 1 || yMin > yMax || yMax + 1 > yMax2) {
-            console.log("cas 3");
-          }
-          newSplittedLines.push(
-            { yMin: yMin2, yMax: yMin - 1, x: x2 },
-            { yMin, yMax, x: x2 },
-            { yMin: yMax + 1, yMax: yMax2, x: x2 }
-          );
-          continue;
-        }
-        if (yMin > yMin2 && yMax > yMax2) {
-          // overlaps end
-          if (yMin2 > yMin - 1 || yMin > yMax2) {
-            console.log("cas 2");
-          }
-          currentLineSplits.push(yMax2, yMax2 + 1);
-          newSplittedLines.push(
-            { yMin: yMin2, yMax: yMin - 1, x: x2 },
-            { yMin, yMax: yMax2, x: x2 }
-          );
-          continue;
-        }
-        if (yMin < yMin2 && yMax > yMax2) {
-          // overlaps both ends
-          if (yMin > yMin2 - 1 || yMin2 > yMax2) {
-            console.log("cas 1");
-          }
-          currentLineSplits.push(yMax2, yMax2 + 1);
-          newSplittedLines.push(
-            { yMin, yMax: yMin2 - 1, x: x },
-            { yMin: yMin2, yMax: yMax2, x: x2 }
-          );
-          continue;
-        }
-
-        if (yMax === yMin2) {
-          currentLineSplits.push(yMax - 1, yMax);
-          newSplittedLines.push({ yMin: yMax, yMax: yMax, x: x2 });
-          if (yMax + 1 <= yMax2) {
-            newSplittedLines.push({ yMin: yMax + 1, yMax: yMax2, x: x2 });
-          }
-          continue;
-        }
-
-        if (yMax2 === yMin) {
-          currentLineSplits.push(yMax2, yMax2 + 1);
-          newSplittedLines.push({ yMin: yMax2, yMax: yMax2, x: x2 });
-          if (yMin2 <= yMax2 - 1) {
-            newSplittedLines.push({ yMin: yMin2, yMax: yMax2 - 1, x: x2 });
-          }
-          continue;
-        }
-
-        console.log("Is in none of the cases");
-      }
-
-      currentLineSplits.push(yMin, yMax);
-
-      const sortedLineSplits = currentLineSplits.sort((a, b) => a - b);
-      for (
-        let splitIndex = 0;
-        splitIndex < sortedLineSplits.length;
-        splitIndex += 2
-      ) {
-        newSplittedLines.push({
-          yMin: sortedLineSplits[splitIndex],
-          yMax: sortedLineSplits[splitIndex + 1],
-          x,
-        });
-      }
-      // console.log(`i = ${i}`, newSplittedLines);
-      const foundLines = new Set();
-      splittedLines = newSplittedLines.filter(({ x, yMin, yMax }) => {
-        const key = `${yMin}|${yMax}|${x}`;
-        if (foundLines.has(key)) {
-          return false;
-        }
-        foundLines.add(key);
-        return true;
-      });
-      if (hasSplit) {
-        break;
-      }
+    yCoordinates.push(yMax);
+    for (let i = 0; i < yCoordinates.length; i += 2) {
+      splitLines.push({ x, yMin: yCoordinates[i], yMax: yCoordinates[i + 1] });
     }
   }
-  return splittedLines;
+  return splitLines;
 };
 
 const sortSplittedLines = (splittedVerticalLines) => {
@@ -268,14 +133,56 @@ const sortSplittedLines = (splittedVerticalLines) => {
   return linesPerCoordinates;
 };
 
-const input = await parseTextInput(true);
-console.log(input);
+const computeArea = (linesPerCoordinates, horizontalLines) => {
+  const horizontalLinesPerCoordinates = {};
+  for (const { xMin, xMax } of horizontalLines) {
+    horizontalLinesPerCoordinates[`${xMin}|${xMax}`] = true;
+  }
+
+  let area = 0;
+  for (const [key, lines] of Object.entries(linesPerCoordinates)) {
+    // console.log(key);
+    let shouldAdd = true;
+    for (let i = 0; i < lines.length - 1; i++) {
+      const { yMin: yMin1, yMax: yMax1, x: x1 } = lines[i];
+      const { yMin: yMin2, yMax: yMax2, x: x2 } = lines[i + 1];
+      if (yMin1 !== yMax1 && shouldAdd) {
+        area += (yMax1 - yMin1 + 1) * (x2 - x1 + 1);
+        shouldAdd = !shouldAdd;
+        continue;
+      }
+
+      if (yMin1 === yMax1) {
+        const isOnHorizontalLine =
+          !!horizontalLinesPerCoordinates[`${x1}|${x2}`];
+
+        if (shouldAdd || isOnHorizontalLine) {
+          area += x2 - x1 + 1;
+          if (isOnHorizontalLine && lines.length > 2) {
+            area -= 1;
+          }
+          if (!isOnHorizontalLine) {
+            shouldAdd = !shouldAdd;
+          }
+        }
+      }
+    }
+  }
+  return area;
+};
+
+const input = await parseTextInput(false);
+// console.log(input);
 
 const [verticalLines, horizontalLines] = computeLines(input);
-console.log(verticalLines);
+// console.log(verticalLines);
 
 const splittedVerticalLines = splitVerticalLines(verticalLines);
-console.log(splittedVerticalLines);
+// console.log(splittedVerticalLines);
 
 const linesPerCoordinates = sortSplittedLines(splittedVerticalLines);
+
+// console.log(horizontalLines);
 console.dir(linesPerCoordinates, { depth: null });
+const area = computeArea(linesPerCoordinates, horizontalLines);
+console.log("Area: ", area);
