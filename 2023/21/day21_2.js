@@ -1,7 +1,7 @@
 import * as fs from "fs/promises";
 
 const prettyPrint = (grid) => {
-  console.log(grid.map((line) => line.join("")).join("\n"));
+  console.log(grid.map((line) => line.join("|")).join("\n"));
 };
 
 const parseTextInput = async (isTest = false) => {
@@ -51,12 +51,13 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
   let positions = [startPos];
 
   const reachedLoop = {};
+  const reachedInsideSquare = {};
 
   for (let i = 0; i < stepsToReach; i++) {
     const positionsPerSquare = {};
     const newPositions = [];
     const occupiedPositions = new Set();
-    // let countBeforeStep = positions.length;
+    let countBeforeStep = positions.length;
     for (const [x, y] of positions) {
       const neighbors = computeNeighbors(grid, x, y).filter(
         ([neighborX, neighborY]) => {
@@ -73,7 +74,6 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
       newPositions.push(...neighbors);
     }
     positions = newPositions;
-
     positions.forEach(([x, y]) => {
       const squareX = Math.floor(x / WIDTH);
       const squareY = Math.floor(y / HEIGHT);
@@ -83,33 +83,61 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
       } else {
         positionsPerSquare[key] += 1;
       }
+      if (reachedInsideSquare[key] === undefined) {
+        reachedInsideSquare[key] = i;
+      }
     });
 
     for (const squareKey of Object.keys(positionsPerSquare)) {
-      if (!reachedLoop[squareKey] && positionsPerSquare[squareKey] === 42) {
+      if (!reachedLoop[squareKey] && positionsPerSquare[squareKey] === 7623) {
         reachedLoop[squareKey] = i;
       }
     }
-    // console.log(`Step ${i}: `, reachedLoop);
 
-    console.log(
-      `Step ${i}:`,
-      positionsPerSquare["0|0"],
-      positions
-        .filter(([x, y]) => x === WIDTH && y >= 0 && y < HEIGHT - 1)
-        .map(([x, y]) => y)
-        .join("-")
-    );
+    const up = Math.floor((i - 24) / 11) + 1;
+    const right = Math.floor((i - 26) / 11) + 1;
+    const left = Math.floor((i - 22) / 11) + 1;
+    const down = Math.floor((i - 28) / 11) + 1;
+    // console.log(`Step ${i}: `, { left, up, right, down });
+    // console.log(`Step ${i}: `, positions.length - countBeforeStep);
+
+    // console.log(`Step ${i}:`, positionsPerSquare["2|-2"]);
   }
+  // console.log(reachedInsideSquare);
+  const OFFSET = 20;
+  const firstReachedGrid = Array.from({ length: 41 }, (_, y) =>
+    Array.from({ length: 41 }, (_, x) =>
+      (reachedInsideSquare[`${x - OFFSET}|${y - OFFSET}`] || "   ")
+        .toString()
+        .padStart(3, "0")
+    )
+  );
+  prettyPrint(firstReachedGrid);
+  console.log("\n");
+  const loopReachedGrid = Array.from({ length: 41 }, (_, y) =>
+    Array.from({ length: 41 }, (_, x) =>
+      (reachedLoop[`${x - OFFSET}|${y - OFFSET}`] || "   ")
+        .toString()
+        .padStart(3, "0")
+    )
+  );
+  prettyPrint(loopReachedGrid);
+  const i = stepsToReach - 1;
+  const up = Math.floor((i - 24) / 11) + 1;
+  const right = Math.floor((i - 26) / 11) + 1;
+  const left = Math.floor((i - 22) / 11) + 1;
+  const down = Math.floor((i - 28) / 11) + 1;
+  console.log({ up, right, left, down });
+
   return positions.length;
 };
 
-const [input, startPos] = await parseTextInput(true);
+const [input, startPos] = await parseTextInput(false);
 
-prettyPrint(input);
+// prettyPrint(input);
 // console.log(startPos);
 
-const reachableCellsCount = computeReachableCells(input, 20, startPos);
+const reachableCellsCount = computeReachableCells(input, 400, startPos);
 console.log("Result : ", reachableCellsCount);
 
 // positions in first square alternate between 39 and 42 forever
