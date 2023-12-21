@@ -1,4 +1,5 @@
 import * as fs from "fs/promises";
+import { writeFileSync } from "fs";
 
 const prettyPrint = (grid) => {
   console.log(grid.map((line) => line.join("|")).join("\n"));
@@ -53,6 +54,15 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
   const reachedLoop = {};
   const reachedInsideSquare = {};
 
+  const topCycle = [];
+  const bottomCycle = [];
+  const rightCycle = [];
+  const leftCycle = [];
+  const topLeftCycle = [];
+  const topRightCycle = [];
+  const bottomLeftCycle = [];
+  const bottomRightCycle = [];
+
   for (let i = 0; i < stepsToReach; i++) {
     const positionsPerSquare = {};
     const newPositions = [];
@@ -94,19 +104,72 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
       }
     }
 
-    const up = Math.floor((i - 24) / 11) + 1;
-    const right = Math.floor((i - 26) / 11) + 1;
-    const left = Math.floor((i - 22) / 11) + 1;
-    const down = Math.floor((i - 28) / 11) + 1;
     // console.log(`Step ${i}: `, { left, up, right, down });
     // console.log(`Step ${i}: `, positions.length - countBeforeStep);
+    if (
+      positionsPerSquare["0|-1"] !== undefined &&
+      ![7623, 7558].includes(positionsPerSquare["0|-1"])
+    ) {
+      topCycle.push(positionsPerSquare["0|-1"]);
+    }
+    if (
+      positionsPerSquare["-1|0"] !== undefined &&
+      ![7623, 7558].includes(positionsPerSquare["-1|0"])
+    ) {
+      leftCycle.push(positionsPerSquare["-1|0"]);
+    }
+    if (
+      positionsPerSquare["1|0"] !== undefined &&
+      ![7623, 7558].includes(positionsPerSquare["1|0"])
+    ) {
+      rightCycle.push(positionsPerSquare["1|0"]);
+    }
+    if (
+      positionsPerSquare["0|1"] !== undefined &&
+      ![7623, 7558].includes(positionsPerSquare["0|1"])
+    ) {
+      bottomCycle.push(positionsPerSquare["0|1"]);
+    }
 
-    // console.log(`Step ${i}:`, positionsPerSquare["2|-2"]);
+    if (
+      positionsPerSquare["-1|-1"] !== undefined &&
+      ![7623, 7558].includes(positionsPerSquare["-1|-1"])
+    ) {
+      topLeftCycle.push(positionsPerSquare["-1|-1"]);
+    }
+    if (
+      positionsPerSquare["1|-1"] !== undefined &&
+      ![7623, 7558].includes(positionsPerSquare["1|-1"])
+    ) {
+      topRightCycle.push(positionsPerSquare["1|-1"]);
+    }
+    if (
+      positionsPerSquare["-1|1"] !== undefined &&
+      ![7623, 7558].includes(positionsPerSquare["-1|1"])
+    ) {
+      bottomLeftCycle.push(positionsPerSquare["-1|1"]);
+    }
+    if (
+      positionsPerSquare["1|1"] !== undefined &&
+      ![7623, 7558].includes(positionsPerSquare["1|1"])
+    ) {
+      bottomRightCycle.push(positionsPerSquare["1|1"]);
+    }
+
+    console.log(
+      `Step ${i}:`
+      // positionsPerSquare["0|-1"]
+      // positionsPerSquare["2|-1"],
+      // positionsPerSquare["1|-2"],
+      // positionsPerSquare["3|-1"],
+      // positionsPerSquare["2|-2"],
+      // positionsPerSquare["1|-3"]
+    );
   }
   // console.log(reachedInsideSquare);
-  const OFFSET = 20;
-  const firstReachedGrid = Array.from({ length: 41 }, (_, y) =>
-    Array.from({ length: 41 }, (_, x) =>
+  const OFFSET = 5;
+  const firstReachedGrid = Array.from({ length: 11 }, (_, y) =>
+    Array.from({ length: 11 }, (_, x) =>
       (reachedInsideSquare[`${x - OFFSET}|${y - OFFSET}`] || "   ")
         .toString()
         .padStart(3, "0")
@@ -114,22 +177,87 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
   );
   prettyPrint(firstReachedGrid);
   console.log("\n");
-  const loopReachedGrid = Array.from({ length: 41 }, (_, y) =>
-    Array.from({ length: 41 }, (_, x) =>
-      (reachedLoop[`${x - OFFSET}|${y - OFFSET}`] || "   ")
-        .toString()
-        .padStart(3, "0")
-    )
-  );
-  prettyPrint(loopReachedGrid);
-  const i = stepsToReach - 1;
-  const up = Math.floor((i - 24) / 11) + 1;
-  const right = Math.floor((i - 26) / 11) + 1;
-  const left = Math.floor((i - 22) / 11) + 1;
-  const down = Math.floor((i - 28) / 11) + 1;
-  console.log({ up, right, left, down });
+  // const loopReachedGrid = Array.from({ length: 11 }, (_, y) =>
+  //   Array.from({ length: 11 }, (_, x) =>
+  //     (reachedLoop[`${x - OFFSET}|${y - OFFSET}`] || "   ")
+  //       .toString()
+  //       .padStart(3, "0")
+  //   )
+  // );
+  // prettyPrint(loopReachedGrid);
+  // console.log("\n");
 
+  // const notInLoopsGrid = Array.from(
+  //   { length: loopReachedGrid.length },
+  //   (_, y) =>
+  //     Array.from({ length: loopReachedGrid[0].length }, (_, x) =>
+  //       firstReachedGrid[y][x] !== "   " && loopReachedGrid[y][x] === "   "
+  //         ? firstReachedGrid[y][x]
+  //         : "   "
+  //     )
+  // );
+  // prettyPrint(notInLoopsGrid);
+  // writeFileSync(
+  //   "topCycle.json",
+  //   JSON.stringify({
+  //     topCycle,
+  //     rightCycle,
+  //     bottomCycle,
+  //     leftCycle,
+  //     topLeftCycle,
+  //     topRightCycle,
+  //     bottomLeftCycle,
+  //     bottomRightCycle,
+  //   })
+  // );
+  const i = stepsToReach - 1;
+  const size = Math.floor((i - 129) / 131);
+  console.log({ size });
+  const loopCycle = [7623, 7558];
+  let oddLoops = 1;
+  let evenLoops = 0;
+  for (let sizeIndex = 1; sizeIndex <= size; sizeIndex++) {
+    if (sizeIndex % 2 === 1) {
+      evenLoops += sizeIndex * 4;
+    } else {
+      oddLoops += sizeIndex * 4;
+    }
+  }
+  console.log({ oddLoops, evenLoops });
+  const loopsSum =
+    oddLoops * loopCycle[(i + 1) % 2] + evenLoops * loopCycle[i % 2];
+  console.log({ loopsSum });
+
+  const lineSize = Math.floor((i - 65) / 131) + 1;
+  const n = Math.floor(i / 131);
+  const diagonalSize = (n * (n + 1)) / 2;
+  console.log({ lineSize, diagonalSize });
   return positions.length;
+};
+
+const computePositionsCount = (stepsToReach) => {
+  const i = stepsToReach - 1;
+  const size = Math.floor((i - 129) / 131);
+  console.log({ size });
+  const loopCycle = [7623, 7558];
+  let oddLoops = 1;
+  let evenLoops = 0;
+  for (let sizeIndex = 1; sizeIndex <= size; sizeIndex++) {
+    if (sizeIndex % 2 === 1) {
+      evenLoops += sizeIndex * 4;
+    } else {
+      oddLoops += sizeIndex * 4;
+    }
+  }
+  console.log({ oddLoops, evenLoops });
+  const loopsSum =
+    oddLoops * loopCycle[(i + 1) % 2] + evenLoops * loopCycle[i % 2];
+  console.log({ loopsSum });
+
+  const lineSize = Math.floor((i - 65) / 131) + 1;
+  const n = Math.floor(i / 131);
+  const diagonalSize = (n * (n + 1)) / 2;
+  console.log({ lineSize, diagonalSize });
 };
 
 const [input, startPos] = await parseTextInput(false);
@@ -137,52 +265,8 @@ const [input, startPos] = await parseTextInput(false);
 // prettyPrint(input);
 // console.log(startPos);
 
-const reachableCellsCount = computeReachableCells(input, 400, startPos);
-console.log("Result : ", reachableCellsCount);
+// const reachableCellsCount = computeReachableCells(input, 430, startPos);
+// console.log("Result : ", reachableCellsCount);
 
 // positions in first square alternate between 39 and 42 forever
 // Real case: positions alternate between 7623 and 7558
-
-/*
-Going right:
-Square 1 has something at step 8
-Square 2 has something at step 21
-Square 3 has something at step 32 -> starting from here the number repeats for every step
-Square 4 has something at step 43
-Square 5 has something at step 54
-
-Going left
-Square 1 has something at step 6
-Square 2 has something at step 21
-Square 3 has something at step 32 -> starting from here the number repeats for every step
-Square 4 has something at step 43
-Square 5 has something at step 54
-
-Going up
-Square 1 has something at step 8
-Square 2 has something at step 21 -> starting from here the number repeats for every step
-Square 3 has something at step 32 
-Square 4 has something at step 43
-Square 5 has something at step 54
-
-Going down
-Square 1 has something at step 7
-Square 2 has something at step 21 -> starting from here the number repeats for every step
-Square 3 has something at step 32 
-Square 4 has something at step 43
-Square 5 has something at step 54
-
-Going up-left
-Square 1 has something at step 11 -> starting from here the number repeats for every step
-Square 2 has something at step 33 
-Square 3 has something at step 55 
-Square 4 has something at step 77
-Square 5 has something at step 99
-
-Going down-right
-Square 1 has something at step 15 -> starting from here the number repeats for every step
-Square 2 has something at step 37 
-Square 3 has something at step 59 
-Square 4 has something at step 81
-Square 5 has something at step 99
-*/
