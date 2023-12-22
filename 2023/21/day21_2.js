@@ -51,7 +51,6 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
   const WIDTH = grid[0].length;
   let positions = [startPos];
 
-  const reachedLoop = {};
   const reachedInsideSquare = {};
 
   const topCycle = [];
@@ -67,7 +66,6 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
     const positionsPerSquare = {};
     const newPositions = [];
     const occupiedPositions = new Set();
-    let countBeforeStep = positions.length;
     for (const [x, y] of positions) {
       const neighbors = computeNeighbors(grid, x, y).filter(
         ([neighborX, neighborY]) => {
@@ -98,14 +96,6 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
       }
     });
 
-    for (const squareKey of Object.keys(positionsPerSquare)) {
-      if (!reachedLoop[squareKey] && positionsPerSquare[squareKey] === 7623) {
-        reachedLoop[squareKey] = i;
-      }
-    }
-
-    // console.log(`Step ${i}: `, { left, up, right, down });
-    // console.log(`Step ${i}: `, positions.length - countBeforeStep);
     if (
       positionsPerSquare["0|-1"] !== undefined &&
       ![7623, 7558].includes(positionsPerSquare["0|-1"])
@@ -166,7 +156,7 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
       // positionsPerSquare["1|-3"]
     );
   }
-  // console.log(reachedInsideSquare);
+
   const OFFSET = 5;
   const firstReachedGrid = Array.from({ length: 11 }, (_, y) =>
     Array.from({ length: 11 }, (_, x) =>
@@ -177,26 +167,7 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
   );
   prettyPrint(firstReachedGrid);
   console.log("\n");
-  // const loopReachedGrid = Array.from({ length: 11 }, (_, y) =>
-  //   Array.from({ length: 11 }, (_, x) =>
-  //     (reachedLoop[`${x - OFFSET}|${y - OFFSET}`] || "   ")
-  //       .toString()
-  //       .padStart(3, "0")
-  //   )
-  // );
-  // prettyPrint(loopReachedGrid);
-  // console.log("\n");
 
-  // const notInLoopsGrid = Array.from(
-  //   { length: loopReachedGrid.length },
-  //   (_, y) =>
-  //     Array.from({ length: loopReachedGrid[0].length }, (_, x) =>
-  //       firstReachedGrid[y][x] !== "   " && loopReachedGrid[y][x] === "   "
-  //         ? firstReachedGrid[y][x]
-  //         : "   "
-  //     )
-  // );
-  // prettyPrint(notInLoopsGrid);
   // writeFileSync(
   //   "topCycle.json",
   //   JSON.stringify({
@@ -210,63 +181,88 @@ const computeReachableCells = (grid, stepsToReach, startPos) => {
   //     bottomRightCycle,
   //   })
   // );
-  const i = stepsToReach - 1;
-  const size = Math.floor((i - 129) / 131);
-  console.log({ size });
-  const loopCycle = [7623, 7558];
-  let oddLoops = 1;
-  let evenLoops = 0;
-  for (let sizeIndex = 1; sizeIndex <= size; sizeIndex++) {
-    if (sizeIndex % 2 === 1) {
-      evenLoops += sizeIndex * 4;
-    } else {
-      oddLoops += sizeIndex * 4;
-    }
-  }
-  console.log({ oddLoops, evenLoops });
-  const loopsSum =
-    oddLoops * loopCycle[(i + 1) % 2] + evenLoops * loopCycle[i % 2];
-  console.log({ loopsSum });
 
-  const lineSize = Math.floor((i - 65) / 131) + 1;
-  const n = Math.floor(i / 131);
-  const diagonalSize = (n * (n + 1)) / 2;
-  console.log({ lineSize, diagonalSize });
   return positions.length;
 };
 
-const computePositionsCount = (stepsToReach) => {
+const computePositionsCount = async (stepsToReach) => {
+  const {
+    leftCycle,
+    rightCycle,
+    bottomCycle,
+    topCycle,
+    topLeftCycle,
+    topRightCycle,
+    bottomLeftCycle,
+    bottomRightCycle,
+  } = JSON.parse((await fs.readFile("computedCycles.json")).toString());
+
+  console.log({
+    leftCycle: leftCycle.length,
+    rightCycle: rightCycle.length,
+    bottomCycle: bottomCycle.length,
+    topCycle: topCycle.length,
+    topLeftCycle: topLeftCycle.length,
+    topRightCycle: topRightCycle.length,
+    bottomLeftCycle: bottomLeftCycle.length,
+    bottomRightCycle: bottomRightCycle.length,
+  });
+  const loopCycle = [7558, 7623];
+
   const i = stepsToReach - 1;
-  const size = Math.floor((i - 129) / 131);
-  console.log({ size });
-  const loopCycle = [7623, 7558];
-  let oddLoops = 1;
-  let evenLoops = 0;
-  for (let sizeIndex = 1; sizeIndex <= size; sizeIndex++) {
-    if (sizeIndex % 2 === 1) {
-      evenLoops += sizeIndex * 4;
-    } else {
-      oddLoops += sizeIndex * 4;
-    }
-  }
-  console.log({ oddLoops, evenLoops });
-  const loopsSum =
-    oddLoops * loopCycle[(i + 1) % 2] + evenLoops * loopCycle[i % 2];
-  console.log({ loopsSum });
 
   const lineSize = Math.floor((i - 65) / 131) + 1;
   const n = Math.floor(i / 131);
   const diagonalSize = (n * (n + 1)) / 2;
   console.log({ lineSize, diagonalSize });
+
+  let positionsCount = 0;
+  let index = 65;
+  while (index < i) {
+    const difference = i - index;
+    for (const cycle of [topCycle, leftCycle, rightCycle, bottomCycle]) {
+      if (difference < cycle.length) {
+        positionsCount += cycle[difference];
+      } else {
+        positionsCount += loopCycle[(difference - cycle.length) % 2];
+      }
+    }
+    index += 131;
+  }
+
+  index = 131;
+  let factor = 1;
+  while (index < i) {
+    const difference = i - index;
+    for (const cycle of [
+      topLeftCycle,
+      topRightCycle,
+      bottomLeftCycle,
+      bottomRightCycle,
+    ]) {
+      if (difference < cycle.length) {
+        positionsCount += factor * cycle[difference];
+      } else {
+        positionsCount += factor * loopCycle[(difference - cycle.length) % 2];
+      }
+    }
+    index += 131;
+    factor += 1;
+  }
+  return positionsCount + loopCycle[i % 2];
 };
 
 const [input, startPos] = await parseTextInput(false);
 
-// prettyPrint(input);
-// console.log(startPos);
+const reachableCellsCount = computeReachableCells(input, 315, startPos);
+console.log("Result : ", reachableCellsCount);
 
-// const reachableCellsCount = computeReachableCells(input, 430, startPos);
-// console.log("Result : ", reachableCellsCount);
+const result = await computePositionsCount(26501365);
+console.log("Efficient result : ", result);
 
-// positions in first square alternate between 39 and 42 forever
-// Real case: positions alternate between 7623 and 7558
+// Explanations: we can find some cycles that simplify things
+// By "square" I mean one occurrence of the map (square 0|0 is the original map, square 1|0 is the map on the right of the original one...)
+// In my real text input:
+//  - after a certain point, positions in the same square alternate between 7623 and 7558
+//  - all squares in the same line (center to top, center to right, center to left, center to bottom) follow exactly the same cycle of evolution
+//  - all square on the same quadrant (top-right, top-left, bottom-right, bottom-left) follow exactly the same cycle of evolution
