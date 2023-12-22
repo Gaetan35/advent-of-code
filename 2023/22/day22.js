@@ -1,4 +1,5 @@
 import * as fs from "fs/promises";
+import { writeFileSync } from "fs";
 
 const parseTextInput = async (isTest = false) => {
   const input = (await fs.readFile(isTest ? "input_test.txt" : "input.txt"))
@@ -11,8 +12,7 @@ const parseTextInput = async (isTest = false) => {
       const [xEnd, yEnd, zEnd] = end.split(",").map(Number);
       const axis = xStart !== xEnd ? "x" : yStart !== yEnd ? "y" : "z";
       return {
-        id: index,
-        // id: letters[index],
+        id: isTest ? letters[index] : index,
         xStart,
         yStart,
         zStart,
@@ -84,8 +84,8 @@ const areBricksIntersecting = (brick1, brick2) => {
 
 const findSafeBricks = (snapshots) => {
   const horizontalPlanes = { 0: "ground" };
-  const bricksSupportedBy = {};
-  const bricksSupporting = {};
+  const bricksAbove = {};
+  const bricksBelow = {};
   for (const fallingBrick of snapshots) {
     for (let z = fallingBrick.zStart; z >= 0; z -= 1) {
       if (horizontalPlanes[z] === "ground") {
@@ -98,15 +98,15 @@ const findSafeBricks = (snapshots) => {
           zEnd: z + 1 + (fallingBrick.zEnd - fallingBrick.zStart),
         });
 
-        if (!bricksSupportedBy["ground"]) {
-          bricksSupportedBy["ground"] = [];
+        if (!bricksAbove["ground"]) {
+          bricksAbove["ground"] = [];
         }
-        bricksSupportedBy["ground"].push(fallingBrick.id);
+        bricksAbove["ground"].push(fallingBrick.id);
 
-        if (!bricksSupporting[fallingBrick.id]) {
-          bricksSupporting[fallingBrick.id] = [];
+        if (!bricksBelow[fallingBrick.id]) {
+          bricksBelow[fallingBrick.id] = [];
         }
-        bricksSupporting[fallingBrick.id].push("ground");
+        bricksBelow[fallingBrick.id].push("ground");
       }
 
       if (horizontalPlanes[z]?.length > 0) {
@@ -132,84 +132,99 @@ const findSafeBricks = (snapshots) => {
           });
 
           intersectingBrickIds.forEach((intersectingBrickId) => {
-            if (!bricksSupportedBy[intersectingBrickId]) {
-              bricksSupportedBy[intersectingBrickId] = [];
+            if (!bricksAbove[intersectingBrickId]) {
+              bricksAbove[intersectingBrickId] = [];
             }
-            bricksSupportedBy[intersectingBrickId].push(fallingBrick.id);
+            bricksAbove[intersectingBrickId].push(fallingBrick.id);
           });
 
-          if (!bricksSupporting[fallingBrick.id]) {
-            bricksSupporting[fallingBrick.id] = [];
+          if (!bricksBelow[fallingBrick.id]) {
+            bricksBelow[fallingBrick.id] = [];
           }
-          bricksSupporting[fallingBrick.id].push(...intersectingBrickIds);
+          bricksBelow[fallingBrick.id].push(...intersectingBrickIds);
           break;
         }
       }
     }
   }
-  return [bricksSupportedBy, bricksSupporting];
+  return [bricksAbove, bricksBelow];
 };
 
+// console.log("Bricks supported by: ");
+// console.dir(bricksSupportedBy, { depth: null });
+// console.log("Bricks supporting: ");
+// console.dir(bricksSupporting, { depth: null });
+
+// let part1Result = 0;
+// for (const { id } of input) {
+//   if (bricksSupportedBy[id] === undefined) {
+//     part1Result += 1;
+//     // console.log(`${id} can be removed`);
+//     continue;
+//   }
+//   const supportedBricks = bricksSupportedBy[id];
+//   if (
+//     supportedBricks.every(
+//       (supportedId) => bricksSupporting[supportedId]?.length >= 2
+//     )
+//   ) {
+//     // console.log(`${id} can be removed`);
+
+//     part1Result += 1;
+//     continue;
+//   }
+// }
+// console.log("Part 1 result: ", part1Result);
+
+// const bricksSupportedBy = {
+//   ground: ["A", "B"],
+//   A: ["C"],
+//   B: ["C", "D"],
+//   C: ["E"],
+//   D: ["E"],
+// };
+
+// const bricksSupporting = {
+//   A: ["ground"],&
+//   B: ["ground"],
+//   C: ["A", "B"],
+//   D: ["B"],
+//   E: ["C", "D"],
+// };
+
 const input = await parseTextInput(true);
-// console.log(input);
 
-const [bricksSupportedBy, bricksSupporting] = findSafeBricks(input);
-console.log("Bricks supported by: ");
-console.dir(bricksSupportedBy, { depth: null });
-console.log("Bricks supporting: ");
-console.dir(bricksSupporting, { depth: null });
+const [bricksAbove, bricksBelow] = findSafeBricks(input);
 
-let part1Result = 0;
-for (const { id } of input) {
-  if (bricksSupportedBy[id] === undefined) {
-    part1Result += 1;
-    // console.log(`${id} can be removed`);
-    continue;
-  }
-  const supportedBricks = bricksSupportedBy[id];
-  if (
-    supportedBricks.every(
-      (supportedId) => bricksSupporting[supportedId]?.length >= 2
-    )
-  ) {
-    // console.log(`${id} can be removed`);
-
-    part1Result += 1;
-    continue;
-  }
-}
-console.log("Part 1 result: ", part1Result);
+console.log(bricksAbove);
+console.log(bricksBelow);
 
 let part2Result = 0;
 for (const { id } of input) {
-  let bricksRemoved = 0;
-  const fallingBricks = { [id]: true };
   const bricksToRemove = [id];
+  const fallingBricks = { ground: true };
   while (bricksToRemove.length > 0) {
     const brickId = bricksToRemove.shift();
-    if (bricksSupportedBy[brickId] === undefined) {
+
+    fallingBricks[brickId] = true;
+    if (bricksAbove[brickId] === undefined) {
       continue;
     }
 
-    const supportedBricks = bricksSupportedBy[brickId];
-    const newBricksToRemove = supportedBricks.filter(
-      (supportedId) =>
-        bricksSupporting[supportedId]?.length === 1 ||
-        bricksSupporting[supportedId].every(
-          (supportingId) => fallingBricks[supportingId]
-        )
+    const supportedBricks = bricksAbove[brickId];
+    const newBricksToRemove = supportedBricks.filter((supportedId) =>
+      bricksBelow[supportedId].every(
+        (supportingId) => fallingBricks[supportingId]
+      )
     );
+    // part2Result += 1;
+
     bricksToRemove.push(...newBricksToRemove);
-    newBricksToRemove.forEach((newId) => {
-      fallingBricks[newId] = true;
-    });
-    bricksRemoved += newBricksToRemove.length;
+
+    part2Result += newBricksToRemove.length;
   }
-  if (bricksRemoved > 0) {
-    console.log(`${id}: makes ${bricksRemoved} other bricks fall`);
-  }
-  part2Result += bricksRemoved;
 }
 console.log("Part 2 result: ", part2Result);
 
 // 74336 is too low
+// 74340 is too low (i think?)
