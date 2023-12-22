@@ -225,6 +225,7 @@ const tests2 = [
 
 const parseTextInput = async (isTest = false) => {
   const filename = isTest ? "puzzle.txt" : "input.txt";
+  // const filename = "input_test.txt";
   const input = (await fs.readFile(filename))
     .toString()
     .split("\n")
@@ -334,13 +335,34 @@ const findSafeBricks = (snapshots) => {
       if (horizontalPlanes[z]?.length > 0) {
         let intersectingBrickIds = [];
         let maxZEnd = 0;
+        // if (fallingBrick.id === 98) {
+        //   console.log("maxZend at start: ", maxZEnd);
+        // }
         for (const brick of horizontalPlanes[z]) {
-          if (areBricksIntersecting(brick, fallingBrick)) {
+          if (
+            brick.zEnd >= maxZEnd &&
+            areBricksIntersecting(fallingBrick, brick)
+          ) {
             if (brick.zEnd > maxZEnd) {
+              // if (fallingBrick.id === 98) {
+              //   console.log("moving maxZend to", brick.zEnd);
+              // }
               maxZEnd = brick.zEnd;
               intersectingBrickIds = [];
             }
+            // if (brick.zEnd === maxZEnd) {
             intersectingBrickIds.push(brick.id);
+            // }
+            // if (fallingBrick.id === 98) {
+            //   console.log(
+            //     "98 intersects with",
+            //     brick.id,
+            //     "maxZend is: ",
+            //     maxZEnd,
+            //     "intersectingBrickIds:",
+            //     intersectingBrickIds
+            //   );
+            // }
           }
         }
         if (intersectingBrickIds.length > 0) {
@@ -369,6 +391,13 @@ const findSafeBricks = (snapshots) => {
       }
     }
   }
+
+  const a = Object.fromEntries(
+    Object.entries(horizontalPlanes).map(([key, value]) => {
+      return [key, value === "ground" ? value : value.map(({ id }) => id)];
+    })
+  );
+  // console.dir(a, { depth: null });
   return [bricksAbove, bricksBelow];
 };
 
@@ -403,9 +432,9 @@ const findPart2Result = (input) => {
 
   const [bricksAbove, bricksBelow] = findSafeBricks(input);
 
-  console.log(bricksBelow);
-  console.log("!!!!!!!!!");
-  console.log(bricksAbove);
+  // console.log(bricksBelow);
+  // console.log("!!!!!!!!!");
+  // console.log(bricksAbove);
 
   let part2Result = 0;
   for (const { id } of input) {
@@ -434,34 +463,44 @@ const findPart2Result = (input) => {
       });
       part2Result += newBricksToRemove.length;
     }
-    console.log(`${id}: added ${part2Result - beforeAdding}`);
+    // console.log(`${id}: added ${part2Result - beforeAdding}`);
   }
   return part2Result;
 };
 
 const input = await parseTextInput(true);
 
-// const part1Result = findPart1Result(input);
-// const part2Result = findPart2Result(input);
+const part1Result = findPart1Result(input);
+const part2Result = findPart2Result(input);
 
-const obtained = findPart2Result(
-  input
-    .slice(74, 101)
-    .filter(({ id }) =>
-      [
-        80, 85, 92, 100, 81, 95, 94, 93, 88, 78, 75, 89, 74, 77, 98, 91, 83, 86,
-      ].includes(id)
-    )
-);
-const expected = 12;
-console.log("Obtained : ", obtained);
+console.log("Part 1 result: ", part1Result);
+console.log("Part 2 result: ", part2Result);
 
-// for (const [_, inputStart, _2, expected] of tests2) {
-//   const obtained = findPart2Result(input.slice(inputStart, 100 + 1));
-//   if (obtained !== expected) {
-//     console.log("Error : ", [inputStart, 100, expected, obtained]);
-//   }
-// }
+// const obtained = findPart2Result(
+//   input
+//     .slice(74, 101)
+//     .filter(({ id }) =>
+//       [
+//         80, 85, 92, 100, 81, 95, 94, 93, 88, 78, 75, 89, 74, 77, 98, 91, 83, 86,
+//       ].includes(id)
+//     )
+// );
+// const expected = 12;
+// console.log("Obtained : ", obtained);
+// console.log(input[74]);
+// console.log(input[77]);
+// console.log(input[98]);
+// 74 -> 8,0,46~8,0,47
+// 77 -> 7,2,57~9,2,57
+// 98 -> 8,0,230~8,2,230
+
+for (const [_, inputStart, _2, expected] of tests2) {
+  const obtained = findPart2Result(input.slice(inputStart, 100 + 1));
+  if (obtained !== expected) {
+    console.log("Error : ", [inputStart, 100, expected, obtained]);
+  }
+}
 
 // 74336 is too low
 // 74340 is too low (i think?)
+// 81524 is false
