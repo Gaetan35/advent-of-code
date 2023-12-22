@@ -372,50 +372,31 @@ const findSafeBricks = (snapshots) => {
   return [bricksAbove, bricksBelow];
 };
 
-// console.log("Bricks supported by: ");
-// console.dir(bricksSupportedBy, { depth: null });
-// console.log("Bricks supporting: ");
-// console.dir(bricksSupporting, { depth: null });
+const findPart1Result = (input) => {
+  input.sort(({ zStart: zStart1 }, { zStart: zStart2 }) => zStart1 - zStart2);
+  const [bricksAbove, bricksBelow] = findSafeBricks(input);
 
-const input = await parseTextInput(false);
-const [bricksAbove, bricksBelow] = findSafeBricks(input);
+  let part1Result = 0;
+  for (const { id } of input) {
+    if (bricksAbove[id] === undefined) {
+      part1Result += 1;
+      // console.log(`${id} can be removed`);
+      continue;
+    }
+    const supportedBricks = bricksAbove[id];
+    if (
+      supportedBricks.every(
+        (supportedId) => bricksBelow[supportedId]?.length >= 2
+      )
+    ) {
+      // console.log(`${id} can be removed`);
 
-let part1Result = 0;
-for (const { id } of input) {
-  if (bricksAbove[id] === undefined) {
-    part1Result += 1;
-    // console.log(`${id} can be removed`);
-    continue;
+      part1Result += 1;
+      continue;
+    }
   }
-  const supportedBricks = bricksAbove[id];
-  if (
-    supportedBricks.every(
-      (supportedId) => bricksBelow[supportedId]?.length >= 2
-    )
-  ) {
-    // console.log(`${id} can be removed`);
-
-    part1Result += 1;
-    continue;
-  }
-}
-console.log("Part 1 result: ", part1Result);
-
-// const bricksSupportedBy = {
-//   ground: ["A", "B"],
-//   A: ["C"],
-//   B: ["C", "D"],
-//   C: ["E"],
-//   D: ["E"],
-// };
-
-// const bricksSupporting = {
-//   A: ["ground"],&
-//   B: ["ground"],
-//   C: ["A", "B"],
-//   D: ["B"],
-//   E: ["C", "D"],
-// };
+  return part1Result;
+};
 
 const findPart2Result = (input) => {
   input.sort(({ zStart: zStart1 }, { zStart: zStart2 }) => zStart1 - zStart2);
@@ -423,10 +404,8 @@ const findPart2Result = (input) => {
   const [bricksAbove, bricksBelow] = findSafeBricks(input);
 
   console.log(bricksBelow);
+  console.log("!!!!!!!!!");
   console.log(bricksAbove);
-  // console.log("Above: ", bricksAbove[13]);
-  // console.log("Above: ", bricksAbove[16]);
-  // console.log("Below: ", bricksBelow[13]);
 
   let part2Result = 0;
   for (const { id } of input) {
@@ -440,8 +419,6 @@ const findPart2Result = (input) => {
       if (bricksAbove[brickId] === undefined) {
         continue;
       }
-
-      // TODO: what if we arrive on the brick before we have gone through all the children?
 
       const newBricksToRemove = bricksAbove[brickId].filter(
         (supportedId) =>
@@ -462,27 +439,28 @@ const findPart2Result = (input) => {
   return part2Result;
 };
 
-// const input = await parseTextInput(true);
+const input = await parseTextInput(true);
 
-// const obtained = findPart2Result(
-//   input.slice(74, 101)
-// .filter(({ id }) =>
-//   [
-//     80, 85, 92, 100, 81, 95, 94, 93, 88, 78, 75, 89, 74, 77, 98, 91, 83, 86,
-//   ].includes(id)
-// )
-// );
-// const expected = 12;
-// console.log("Obtained : ", obtained);
+// const part1Result = findPart1Result(input);
+// const part2Result = findPart2Result(input);
+
+const obtained = findPart2Result(
+  input
+    .slice(74, 101)
+    .filter(({ id }) =>
+      [
+        80, 85, 92, 100, 81, 95, 94, 93, 88, 78, 75, 89, 74, 77, 98, 91, 83, 86,
+      ].includes(id)
+    )
+);
+const expected = 12;
+console.log("Obtained : ", obtained);
 
 // for (const [_, inputStart, _2, expected] of tests2) {
 //   const obtained = findPart2Result(input.slice(inputStart, 100 + 1));
 //   if (obtained !== expected) {
 //     console.log("Error : ", [inputStart, 100, expected, obtained]);
 //   }
-// }
-
-// for (const [inputStart, inputEnd] of tests) {
 // }
 
 // 74336 is too low
