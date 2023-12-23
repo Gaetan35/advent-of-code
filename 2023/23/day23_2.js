@@ -1,14 +1,10 @@
 import * as fs from "fs/promises";
 
-const prettyPrint = (grid) => {
-  console.log(grid.map((line) => line.join("")).join("\n"));
-};
-
 const parseTextInput = async (isTest = false) => {
   const grid = (await fs.readFile(isTest ? "input_test.txt" : "input.txt"))
     .toString()
     .split("\n")
-    .map((line) => line.split(""));
+    .map((line) => line.split("").map((char) => (char === "#" ? "#" : ".")));
 
   const startPos = [grid[0].indexOf("."), 0];
   const endPos = [grid.at(-1).indexOf("."), grid[0].length - 1];
@@ -27,12 +23,6 @@ const forbiddenDirection = {
   UP: "DOWN",
   DOWN: "UP",
 };
-const allowedSlopePerDirection = {
-  LEFT: ["<"],
-  RIGHT: [">"],
-  UP: ["^"],
-  DOWN: ["v"],
-};
 
 const computeNeighborsPos = (grid, { pos: [x, y], lastDirection }) => {
   const neighbors = [];
@@ -43,9 +33,7 @@ const computeNeighborsPos = (grid, { pos: [x, y], lastDirection }) => {
     const newX = x + dx;
     const newY = y + dy;
 
-    if (
-      [".", ...allowedSlopePerDirection[direction]].includes(grid[newY]?.[newX])
-    ) {
+    if (grid[newY]?.[newX] === ".") {
       neighbors.push({ pos: [newX, newY], lastDirection: direction });
     }
   }
@@ -66,8 +54,12 @@ const computeGraph = (grid, startPos, endPos) => {
     },
   ];
   const visitedNodes = {};
+  let i = 0;
   while (tiles.length > 0) {
+    i += 1;
+
     const tile = tiles.pop();
+
     const lastNode = tile.lastNode;
 
     let neighborsPos = computeNeighborsPos(grid, tile);
@@ -81,6 +73,12 @@ const computeGraph = (grid, startPos, endPos) => {
       neighborsPos = computeNeighborsPos(grid, tile);
     }
     const currentPosJoined = tile.pos.join("|");
+
+    const key = [currentPosJoined, lastNode, tile.distance].join("-");
+    if (visitedNodes[key]) {
+      continue;
+    }
+    visitedNodes[key] = true;
 
     graph[currentPosJoined] = graph[currentPosJoined] ?? [];
     if (
@@ -110,7 +108,9 @@ const computeMaxPath = (graph, startPos, endPos) => {
   ];
   const endPosJoined = endPos.join("|");
   let maxPathLength = 0;
+  let i = 0;
   while (nodes.length > 0) {
+    i += 1;
     const node = nodes.pop();
     if (node.pos === endPosJoined && node.distance > maxPathLength) {
       console.log("Reached the end in: ", node.distance);
@@ -136,10 +136,7 @@ const computeMaxPath = (graph, startPos, endPos) => {
 };
 
 const [grid, startPos, endPos] = await parseTextInput(false);
-prettyPrint(grid);
-console.log("\n");
 const graph = computeGraph(grid, startPos, endPos);
-
-console.log(graph);
+console.log("Number of nodes: ", Object.keys(graph).length);
 const maxPathLength = computeMaxPath(graph, startPos, endPos);
 console.log("Result: ", maxPathLength);
