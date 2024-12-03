@@ -51,7 +51,7 @@ const findContiguousSet = (input: number[], invalidNumber: number) => {
 };
 
 const main = async () => {
-  const IS_TEST = false;
+  const IS_TEST = true;
   const input = await parseTextInput(IS_TEST);
   const invalidNumber = findInvalidNumber(input, IS_TEST ? 5 : 25);
 

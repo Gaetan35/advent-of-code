@@ -15,7 +15,7 @@ type Input = (
 const parseTextInput = async (isTest = false): Promise<Input> => {
   const memLineRegex = /^mem\[(\d+)\] = (\d+)$/;
 
-  return (await fs.readFile(isTest ? "input_test2.txt" : "input.txt"))
+  return (await fs.readFile(isTest ? "input_test.txt" : "input.txt"))
     .toString()
     .split("\n")
     .map((line) => {
@@ -107,8 +107,8 @@ async function main() {
   const part1Result = part1(input);
   console.log("Part1 result: ", part1Result);
 
-  const part2Result = part2(input);
-  console.log("Part2 result: ", part2Result);
+  // const part2Result = part2(input);
+  // console.log("Part2 result: ", part2Result);
 }
 
 main();
