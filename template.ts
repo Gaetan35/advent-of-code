@@ -1,11 +1,15 @@
 import * as fs from "fs/promises";
+import * as path from "path";
 
 type Input = any;
 
 const parseTextInput = async (isTest = false): Promise<Input> => {
-  return (await fs.readFile(isTest ? "input_test.txt" : "input.txt"))
-    .toString()
-    .split("\n");
+  const filePath = path.join(
+    __dirname,
+    isTest ? "input_test.txt" : "input.txt"
+  );
+
+  return (await fs.readFile(filePath)).toString().split("\n");
 };
 
 function part1(input: Input) {
