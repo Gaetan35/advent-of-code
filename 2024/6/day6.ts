@@ -75,22 +75,13 @@ const getsStuckInLoop = ({ startingPos, grid }: Input) => {
     guardY < grid.length
   ) {
     iteration++;
-    const key = `${guardX}|${guardY}`;
+    const key = `${guardX}|${guardY}|${direction}`;
 
-    if (
-      visitedPos[key]?.length > 2 &&
-      iteration - visitedPos[key].at(-1) ===
-        visitedPos[key].at(-1) - visitedPos[key].at(-2) // &&
-      // iteration - visitedPos[key].at(-1) ===
-      //   visitedPos[key].at(-2) - visitedPos[key].at(-3)
-    ) {
+    if (visitedPos[key]) {
       return true;
     }
 
-    if (!visitedPos[key]) {
-      visitedPos[key] = [];
-    }
-    visitedPos[key].push(iteration);
+    visitedPos[key] = true;
 
     const nextX = guardX + deltas[direction].dx;
     const nextY = guardY + deltas[direction].dy;
