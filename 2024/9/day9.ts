@@ -6,6 +6,17 @@ type Input = (
   | { type: "space"; length: number }
 )[];
 
+const prettyPrint = (input: Input) => {
+  let result = "";
+  for (const block of input) {
+    result +=
+      block.type === "file"
+        ? `${block.id}`.repeat(block.length)
+        : ".".repeat(block.length);
+  }
+  return result;
+};
+
 const parseTextInput = async (isTest = false): Promise<Input> => {
   const filePath = path.join(
     __dirname,
@@ -111,7 +122,54 @@ function part1(input: Input) {
 }
 
 function part2(input: Input) {
-  return null;
+  let firstSpaceIndex = 1;
+  let lastFileIndex =
+    input.at(-1).type === "file" ? input.length - 1 : input.length - 2;
+
+  let hardDrive = [...input];
+
+  while (firstSpaceIndex < lastFileIndex) {
+    let spaceIndexToSwap = firstSpaceIndex;
+    while (
+      spaceIndexToSwap < lastFileIndex &&
+      (hardDrive[spaceIndexToSwap].type !== "space" ||
+        hardDrive[spaceIndexToSwap].length < hardDrive[lastFileIndex].length)
+    ) {
+      spaceIndexToSwap += 1;
+    }
+    if (spaceIndexToSwap === lastFileIndex) {
+      lastFileIndex -= 1;
+      while (hardDrive[lastFileIndex].type !== "file") {
+        lastFileIndex -= 1;
+      }
+      continue;
+    }
+
+    hardDrive = swap(hardDrive, spaceIndexToSwap, lastFileIndex);
+
+    while (hardDrive[firstSpaceIndex].type !== "space") {
+      firstSpaceIndex += 1;
+    }
+    while (hardDrive[lastFileIndex].type !== "file") {
+      lastFileIndex -= 1;
+    }
+  }
+
+  let checksum = 0;
+  let index = 0;
+  for (const block of hardDrive) {
+    if (block.type === "file") {
+      for (let i = 0; i < block.length; i++) {
+        checksum += index * block.id;
+        index += 1;
+      }
+    }
+    if (block.type === "space") {
+      index += block.length;
+    }
+  }
+
+  return checksum;
 }
 
 async function main() {
