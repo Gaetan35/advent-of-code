@@ -12,40 +12,12 @@ const parseTextInput = async (isTest = false): Promise<Input> => {
   return (await fs.readFile(filePath)).toString().split(" ").map(Number);
 };
 
-function part1(input: Input) {
-  const MAX_BLINKS = 25;
-  let stones = [...input];
-  for (let blink = 1; blink <= MAX_BLINKS; blink++) {
-    const newStones = [];
-    for (const stone of stones) {
-      if (stone === 0) {
-        newStones.push(1);
-        continue;
-      }
-
-      const stoneString = stone.toString();
-      if (stoneString.length % 2 === 0) {
-        newStones.push(
-          Number(stoneString.substring(0, stoneString.length / 2))
-        );
-        newStones.push(Number(stoneString.substring(stoneString.length / 2)));
-        continue;
-      }
-
-      newStones.push(stone * 2024);
-    }
-    stones = newStones;
-  }
-  return stones.length;
-}
-
-function part2(input: Input) {
-  const MAX_BLINKS = 75;
+function findStonesNumber(input: Input, maxBlinks: number) {
   let stones = input.map((stone) => ({ number: stone, count: 1 }));
-  // console.log("Input length: ", stones.length);
 
-  for (let blink = 1; blink <= MAX_BLINKS; blink++) {
+  for (let blink = 1; blink <= maxBlinks; blink++) {
     const stoneNumbers: Record<string, number> = {};
+
     for (const { number, count } of stones) {
       if (number === 0) {
         stoneNumbers[1] = (stoneNumbers[1] || 0) + count;
@@ -73,7 +45,6 @@ function part2(input: Input) {
       number: Number(number),
       count,
     }));
-    // console.log(`Length after blink ${blink}: ${stones.length}`);
   }
   return stones.reduce((acc, { count }) => acc + count, 0);
 }
@@ -82,10 +53,10 @@ async function main() {
   const IS_TEST = process.argv[2] === "test";
   const input = await parseTextInput(IS_TEST);
 
-  const part1Result = part1(input);
+  const part1Result = findStonesNumber(input, 25);
   console.log("Part1 result: ", part1Result);
 
-  const part2Result = part2(input);
+  const part2Result = findStonesNumber(input, 75);
   console.log("Part2 result: ", part2Result);
 }
 
