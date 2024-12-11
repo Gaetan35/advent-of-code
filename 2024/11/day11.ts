@@ -40,38 +40,42 @@ function part1(input: Input) {
 }
 
 function part2(input: Input) {
-  const MAX_BLINKS = 5;
+  const MAX_BLINKS = 75;
   let stones = input.map((stone) => ({ number: stone, count: 1 }));
-  console.log("Input length: ", stones.length);
-  console.log("Blink 0: ", stones);
+  // console.log("Input length: ", stones.length);
+
   for (let blink = 1; blink <= MAX_BLINKS; blink++) {
-    const newStones = [];
+    const stoneNumbers: Record<string, number> = {};
     for (const { number, count } of stones) {
       if (number === 0) {
-        newStones.push({ number: 1, count });
+        stoneNumbers[1] = (stoneNumbers[1] || 0) + count;
         continue;
       }
 
       const stoneString = number.toString();
       if (stoneString.length % 2 === 0) {
-        newStones.push({
-          number: Number(stoneString.substring(0, stoneString.length / 2)),
-          count,
-        });
-        newStones.push({
-          number: Number(stoneString.substring(stoneString.length / 2)),
-          count,
-        });
+        const leftNumber = Number(
+          stoneString.substring(0, stoneString.length / 2)
+        );
+        stoneNumbers[leftNumber] = (stoneNumbers[leftNumber] || 0) + count;
+
+        const rightNumber = Number(
+          stoneString.substring(stoneString.length / 2)
+        );
+        stoneNumbers[rightNumber] = (stoneNumbers[rightNumber] || 0) + count;
         continue;
       }
 
-      newStones.push({ number: number * 2024, count });
+      stoneNumbers[number * 2024] = (stoneNumbers[number * 2024] || 0) + count;
     }
 
-    stones = newStones;
-    console.log(`Length after blink ${blink}: ${stones.length}`, stones);
+    stones = Object.entries(stoneNumbers).map(([number, count]) => ({
+      number: Number(number),
+      count,
+    }));
+    // console.log(`Length after blink ${blink}: ${stones.length}`);
   }
-  return stones.length;
+  return stones.reduce((acc, { count }) => acc + count, 0);
 }
 
 async function main() {
