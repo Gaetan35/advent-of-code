@@ -83,10 +83,10 @@ const findRegion2 = (
 ) => {
   const nodes = [{ x: startX, y: startY }];
   const deltas = [
-    { dx: 1, dy: 0, type: "vertical" },
-    { dx: -1, dy: 0, type: "vertical" },
-    { dx: 0, dy: 1, type: "horizontal" },
-    { dx: 0, dy: -1, type: "horizontal" },
+    { dx: 1, dy: 0, type: "right" },
+    { dx: -1, dy: 0, type: "left" },
+    { dx: 0, dy: 1, type: "down" },
+    { dx: 0, dy: -1, type: "up" },
   ];
   const letter = grid[startY][startX];
   let area = 0;
@@ -119,17 +119,8 @@ const findRegion2 = (
     }
   }
 
-  const horizontalPerimeters = perimeters
-    .filter((p) => p.type === "horizontal")
-    .toSorted((a, b) => {
-      if (a.y === b.y) {
-        return a.x - b.x;
-      }
-      return a.y - b.y;
-    });
-
-  const verticalPerimeters = perimeters
-    .filter((p) => p.type === "vertical")
+  const rightPerimeters = perimeters
+    .filter((p) => p.type === "right")
     .toSorted((a, b) => {
       if (a.x === b.x) {
         return a.y - b.y;
@@ -137,33 +128,80 @@ const findRegion2 = (
       return a.x - b.x;
     });
 
-  let horizontalSides = 1;
-  let lastX = horizontalPerimeters[0].x;
-  let lastY = horizontalPerimeters[0].y;
-  for (let i = 1; i < horizontalPerimeters.length; i++) {
-    const { x, y } = horizontalPerimeters[i];
-    if (y !== lastY || x !== lastX + 1) {
-      horizontalSides++;
-    }
-    lastX = x;
-    lastY = y;
-  }
-
-  let verticalSides = 1;
-  lastX = verticalPerimeters[0].x;
-  lastY = verticalPerimeters[0].y;
-  for (let i = 1; i < verticalPerimeters.length; i++) {
-    const { x, y } = verticalPerimeters[i];
+  let rightSides = 1;
+  let lastX = rightPerimeters[0].x;
+  let lastY = rightPerimeters[0].y;
+  for (let i = 1; i < rightPerimeters.length; i++) {
+    const { x, y } = rightPerimeters[i];
     if (x !== lastX || y !== lastY + 1) {
-      verticalSides++;
+      rightSides++;
     }
     lastX = x;
     lastY = y;
   }
 
-  const sides = verticalSides + horizontalSides;
-  // console.log("Letter: ", letter);
-  // console.log("Sides: ", sides);
+  const leftPerimeters = perimeters
+    .filter((p) => p.type === "left")
+    .toSorted((a, b) => {
+      if (a.x === b.x) {
+        return a.y - b.y;
+      }
+      return a.x - b.x;
+    });
+
+  let leftSides = 1;
+  lastX = leftPerimeters[0].x;
+  lastY = leftPerimeters[0].y;
+  for (let i = 1; i < leftPerimeters.length; i++) {
+    const { x, y } = leftPerimeters[i];
+    if (x !== lastX || y !== lastY + 1) {
+      leftSides++;
+    }
+    lastX = x;
+    lastY = y;
+  }
+
+  const downPerimeters = perimeters
+    .filter((p) => p.type === "down")
+    .toSorted((a, b) => {
+      if (a.y === b.y) {
+        return a.x - b.x;
+      }
+      return a.y - b.y;
+    });
+  let downSides = 1;
+  lastX = downPerimeters[0].x;
+  lastY = downPerimeters[0].y;
+  for (let i = 1; i < downPerimeters.length; i++) {
+    const { x, y } = downPerimeters[i];
+    if (y !== lastY || x !== lastX + 1) {
+      downSides++;
+    }
+    lastX = x;
+    lastY = y;
+  }
+
+  const upPerimeters = perimeters
+    .filter((p) => p.type === "up")
+    .toSorted((a, b) => {
+      if (a.y === b.y) {
+        return a.x - b.x;
+      }
+      return a.y - b.y;
+    });
+  let upSides = 1;
+  lastX = upPerimeters[0].x;
+  lastY = upPerimeters[0].y;
+  for (let i = 1; i < upPerimeters.length; i++) {
+    const { x, y } = upPerimeters[i];
+    if (y !== lastY || x !== lastX + 1) {
+      upSides++;
+    }
+    lastX = x;
+    lastY = y;
+  }
+
+  const sides = upSides + downSides + leftSides + rightSides;
 
   return { area, sides, letter };
 };
@@ -197,5 +235,3 @@ async function main() {
 }
 
 main();
-
-// 834546 is too low
