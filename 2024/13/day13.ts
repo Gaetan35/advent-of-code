@@ -23,23 +23,9 @@ const parseTextInput = async (isTest = false): Promise<Input> => {
 
   return slots.map((slot) => {
     const [lineA, lineB, linePrize] = slot.split("\n");
-    // console.log({ lineA, lineB, linePrize });
-
     const matchA = buttonRegex.exec(lineA);
     const matchB = buttonRegex.exec(lineB);
     const matchPrize = prizeRegex.exec(linePrize);
-
-    if (!matchA) {
-      console.log("No match in lineA");
-    }
-
-    if (!matchB) {
-      console.log("No match in lineB");
-    }
-
-    if (!matchPrize) {
-      console.log("No match in linePrize");
-    }
 
     return {
       dxa: +matchA[1],
@@ -80,7 +66,39 @@ function part1(input: Input) {
 }
 
 function part2(input: Input) {
-  return null;
+  let totalCost = 0;
+  for (const {
+    dxa,
+    dxb,
+    dya,
+    dyb,
+    xPrize: originalXPrize,
+    yPrize: originalYPrize,
+  } of input) {
+    function roundIfClose(num: number, epsilon = 1e-4): number {
+      const rounded = Math.round(num);
+      if (Math.abs(num - rounded) < epsilon) {
+        return rounded;
+      }
+      return num;
+    }
+
+    const OFFSET = 10000000000000;
+    const xPrize = originalXPrize + OFFSET;
+    const yPrize = originalYPrize + OFFSET;
+
+    const countBNumerator = yPrize - (dya / dxa) * xPrize;
+    const countBDenominator = dyb - (dya / dxa) * dxb;
+    const countB = countBNumerator / countBDenominator;
+    const roundedCountB = roundIfClose(countB);
+    if (!Number.isInteger(roundedCountB)) {
+      continue;
+    }
+    const countA = (xPrize - dxb * roundedCountB) / dxa;
+    const tokenCost = 3 * countA + roundedCountB;
+    totalCost += tokenCost;
+  }
+  return totalCost;
 }
 
 async function main() {
@@ -95,6 +113,3 @@ async function main() {
 }
 
 main();
-
-// 53455 is too high
-// 34855 is too low
