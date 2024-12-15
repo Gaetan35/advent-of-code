@@ -15,7 +15,7 @@ const parseTextInput = async (isTest = false): Promise<Input> => {
     .map((line) => line.split(""));
 };
 
-const findRegion1 = (
+const findRegionPart1 = (
   grid: Input,
   visitedNodes: Record<string, boolean>,
   startX: number,
@@ -65,7 +65,7 @@ function part1(grid: Input) {
         continue;
       }
 
-      const region = findRegion1(grid, visitedNodes, x, y);
+      const region = findRegionPart1(grid, visitedNodes, x, y);
       regions.push(region);
     }
   }
@@ -75,7 +75,7 @@ function part1(grid: Input) {
   );
 }
 
-const findRegion2 = (
+const findRegionPart2 = (
   grid: Input,
   visitedNodes: Record<string, boolean>,
   startX: number,
@@ -215,7 +215,7 @@ function part2(grid: Input) {
         continue;
       }
 
-      const region = findRegion2(grid, visitedNodes, x, y);
+      const region = findRegionPart2(grid, visitedNodes, x, y);
       regions.push(region);
     }
   }
