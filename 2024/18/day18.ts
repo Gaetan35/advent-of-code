@@ -38,11 +38,6 @@ const computeNeighbors = (
   return neighbors;
 };
 
-const prettyPrint = (grid: unknown[][]) => {
-  console.log(grid.map((line) => line.join("")).join("\n"));
-  console.log("\n");
-};
-
 function part1(bytes: Input, gridSize: number) {
   const grid = Array.from({ length: gridSize }, () =>
     Array.from({ length: gridSize }, () => ".")
@@ -76,8 +71,13 @@ function part1(bytes: Input, gridSize: number) {
   return minDistance;
 }
 
-function part2(input: Input) {
-  return null;
+function part2(bytes: Input, initialByteNumber: number, gridSize: number) {
+  let byteNumber = initialByteNumber;
+  while (part1(bytes.slice(0, byteNumber), gridSize) !== Infinity) {
+    byteNumber++;
+  }
+  const { x, y } = bytes[byteNumber - 1];
+  return `${x},${y}`;
 }
 
 async function main() {
@@ -85,10 +85,11 @@ async function main() {
   const input = await parseTextInput(IS_TEST);
 
   const byteNumber = IS_TEST ? 12 : 1024;
-  const part1Result = part1(input.slice(0, byteNumber), IS_TEST ? 7 : 71);
+  const gridSize = IS_TEST ? 7 : 71;
+  const part1Result = part1(input.slice(0, byteNumber), gridSize);
   console.log("Part1 result: ", part1Result);
 
-  const part2Result = part2(input);
+  const part2Result = part2(input, byteNumber, gridSize);
   console.log("Part2 result: ", part2Result);
 }
 
