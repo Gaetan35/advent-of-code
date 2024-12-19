@@ -41,8 +41,43 @@ function part1({ patterns, designs }: Input) {
   return possibleDesigns;
 }
 
-function part2(input: Input) {
-  return null;
+function part2({ patterns, designs }: Input) {
+  let possibleDesigns = 0;
+
+  for (const design of designs) {
+    const nodes = [{ totalString: "", previous: [] }];
+    const cache = {};
+    while (nodes.length) {
+      const { totalString, previous } = nodes.pop();
+      if (totalString === design) {
+        possibleDesigns++;
+        for (const prev of previous) {
+          cache[prev] = cache[prev] ? cache[prev] + 1 : 1;
+        }
+        continue;
+      }
+      if (cache[totalString]) {
+        for (const prev of previous) {
+          cache[prev] = cache[prev]
+            ? cache[prev] + cache[totalString]
+            : cache[totalString];
+        }
+        possibleDesigns += cache[totalString];
+        continue;
+      }
+
+      for (const pattern of patterns) {
+        const newNode = pattern + totalString;
+        if (design.endsWith(newNode)) {
+          nodes.push({
+            totalString: newNode,
+            previous: [...previous, totalString],
+          });
+        }
+      }
+    }
+  }
+  return possibleDesigns;
 }
 
 async function main() {
