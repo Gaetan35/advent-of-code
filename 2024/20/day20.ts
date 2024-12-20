@@ -185,8 +185,6 @@ function part1({ grid, startPos, endPos }: Input) {
     nodes.push(...computeNeighbors(grid, node, visited, true));
   }
 
-  console.log(cheatsCount);
-
   const MIN_TIME_SAVED = 100;
 
   return Object.entries(cheatsCount)
@@ -194,8 +192,128 @@ function part1({ grid, startPos, endPos }: Input) {
     .reduce((acc, [_, count]) => acc + count, 0);
 }
 
-function part2(input: Input) {
-  return null;
+const computeNeighborsPart2 = (
+  grid: Input["grid"],
+  node: Node,
+  visited: Set<string>,
+  accessibleNodes: { x: number; y: number }[],
+  canUseCheat = false
+) => {
+  const neighbors = [];
+  for (const { dx, dy } of deltas) {
+    const newX = node.x + dx;
+    const newY = node.y + dy;
+
+    let key = `${newX}|${newY}`;
+    if (canUseCheat) {
+      key += `|${node.cheatPos}`;
+    }
+
+    if ([".", "E"].includes(grid[newY]?.[newX]) && !visited.has(key)) {
+      neighbors.push({
+        ...node,
+        x: newX,
+        y: newY,
+        picoseconds: node.picoseconds + 1,
+        ...(node.path !== undefined
+          ? { path: [...node.path, `${node.x}|${node.y}`] }
+          : {}),
+      });
+    }
+  }
+
+  if (canUseCheat && !node.cheatPos) {
+    for (const { x: newX, y: newY } of accessibleNodes) {
+      const distance = Math.abs(newX - node.x) + Math.abs(newY - node.y);
+      if (
+        distance <= 20 &&
+        [".", "E"].includes(grid[newY]?.[newX]) &&
+        !visited.has(`${newX}|${newY}|${node.cheatPos}`)
+      ) {
+        neighbors.push({
+          ...node,
+          x: newX,
+          y: newY,
+          picoseconds: node.picoseconds + distance,
+          cheatPos: `${node.x}|${node.y}_to_${newX}|${newY}`,
+        });
+      }
+    }
+  }
+
+  return neighbors;
+};
+
+function part2({ grid, startPos, endPos }: Input) {
+  const { normalPathTime, timeToEndWithoutCheats } = getNormalPathTime({
+    grid,
+    startPos,
+    endPos,
+  });
+
+  const accessibleNodes = [];
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[y].length; x++) {
+      if (grid[y][x] === "." || grid[y][x] === "E") {
+        accessibleNodes.push({ x, y });
+      }
+    }
+  }
+
+  const nodes = [{ ...startPos, picoseconds: 0, cheatPos: null }];
+  const visited = new Set<string>();
+  const cheatsCount: Record<string, number> = {};
+  while (nodes.length > 0) {
+    const node = nodes.pop();
+
+    const key = `${node.x}|${node.y}|${node.cheatPos}`;
+    if (visited.has(key)) {
+      continue;
+    }
+    visited.add(key);
+
+    if (node.picoseconds >= normalPathTime) {
+      continue;
+    }
+
+    if (
+      node.cheatPos !== null &&
+      timeToEndWithoutCheats[`${node.x}|${node.y}`] !== undefined
+    ) {
+      const timeSaved =
+        normalPathTime -
+        (node.picoseconds + timeToEndWithoutCheats[`${node.x}|${node.y}`]);
+
+      if (timeSaved <= 0) {
+        continue;
+      }
+
+      if (!cheatsCount[timeSaved]) {
+        cheatsCount[timeSaved] = 0;
+      }
+      cheatsCount[timeSaved] += 1;
+      continue;
+    }
+
+    if (node.x === endPos.x && node.y === endPos.y) {
+      const timeSaved = normalPathTime - node.picoseconds;
+      if (!cheatsCount[timeSaved]) {
+        cheatsCount[timeSaved] = 0;
+      }
+      cheatsCount[timeSaved] += 1;
+      continue;
+    }
+
+    nodes.push(
+      ...computeNeighborsPart2(grid, node, visited, accessibleNodes, true)
+    );
+  }
+
+  const MIN_TIME_SAVED = 100;
+
+  return Object.entries(cheatsCount)
+    .filter(([timeSaved, _]) => +timeSaved >= MIN_TIME_SAVED)
+    .reduce((acc, [_, count]) => acc + count, 0);
 }
 
 async function main() {
