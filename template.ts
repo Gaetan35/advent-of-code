@@ -32,3 +32,6 @@ async function main() {
 }
 
 main();
+
+// ts-node 2025/1/1.ts test
+// ts-node 2025/1/1.ts
